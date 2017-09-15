@@ -9,7 +9,7 @@ Existen ficheros Node.JS y scripts de Python. Node.JS llama a estos scripts de P
 
 A continuación se comentan los distintos ficheros relacionados con estos desarrollos, tanto aquellos con funcionalidad real como los creados para la realización de simulaciones:
 
-- Fichero *BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js*. Definición e implementación de los dispositivos MOTAM de tipo PositionSensorWithNotifications, SpeedSensorWithNotifications, DisplayActuator, LightActuator y SoundActuator a través de BLE, y haciendo uso del puerto serie. Hace uso de los ficheros "pswnThread.js" y "sswnThread.js". También utiliza los módulos "[util](https://nodejs.org/api/util.html)" , "[child_process](https://nodejs.org/api/child_process.html)" y "[bleno](https://www.npmjs.com/package/bleno)" de Node.JS.
+- Fichero *BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js*. Este es el código principal. Contiene la definición e implementación de los dispositivos MOTAM de tipo PositionSensorWithNotifications, SpeedSensorWithNotifications, DisplayActuator, LightActuator y SoundActuator a través de BLE, y haciendo uso del puerto serie. Hace uso de los ficheros "pswnThread.js" y "sswnThread.js". También utiliza los módulos "[util](https://nodejs.org/api/util.html)" , "[child_process](https://nodejs.org/api/child_process.html)" y "[bleno](https://www.npmjs.com/package/bleno)" de Node.JS.
 
 - Fichero *pswnThread.js*. Hebra lanzada por BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js para la notificación de los nuevos valores proporcionados por el dispositivo PositionSensor[WithNotifications] al proceso principal. Hace uso del fichero PositionSensorBasedOnGPSD.js y del módulo "[util](https://nodejs.org/api/util.html)" de Node.JS.
 

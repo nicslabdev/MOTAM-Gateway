@@ -291,9 +291,9 @@ var sswnNotifyCallback;
 var sswnThreshold = 0;
 var sswnCurrentSpeed = 0;
 
-// Initialize pyOBD_node.py python script
+// Initialize sswnThread.py python script
 var spawn = require('child_process').spawn,
-    py    = spawn('python', ['pyOBD_node.py']),
+    py    = spawn('python', ['sswnThread.py']),
     data = '';
 
 // When python script send speed to node, this is saved in "data"
