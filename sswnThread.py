@@ -45,12 +45,10 @@ def main():
 	 	# sys.stdout.flush()
 
 		connection = obd.OBD(port) # create an asynchronous connection
-		# this line is for simulation with obdsim
-		#connection = obd.OBD('/dev/pts/1')
 
 		# Debug
 		# print("connection: " + str(connection))
-	 # 	sys.stdout.flush()
+		# sys.stdout.flush()
 
 		if connection.status() != obd.OBDStatus.NOT_CONNECTED:
 			break # Success! Stop searching for serial
@@ -73,13 +71,15 @@ def main():
 
 		quit()
 
-	print ("El puerto es> "+port)
 	connection.close()
 	time.sleep(1)
-	connection2 = obd.Async(portstr=port, fast=False) # create an asynchronous connection
-	# connection = obd.Async('/dev/pts/1')
 
-	# keep track of the car's RPM
+	# following line is for real conection (only one can be used at the same time)
+	connection2 = obd.Async(portstr=port, fast=False) # create an asynchronous connection
+	# following line is for simulated conection (only one can be used at the same time)
+	# connection2 = obd.Async('/dev/pts/2')
+
+	# keep track of the car SPEED
 	connection2.watch(obd.commands.SPEED, callback=new_value)
 
 	try:
