@@ -1,0 +1,21 @@
+{
+  "name": "MOTAM",
+  "version": "0.0.1",
+  "description": "MOTAM Gateway",
+  "main": "BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js",
+  "dependencies": {
+    "serialport": "^5.0.0",
+    "bleno": "^0.4.2",
+    "node-gpsd": "^0.3.0",
+    "unidecode": "^0.1.8"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "IoT"
+  ],
+  "author": "Manuel Montenegro",
+  "license": "ISC"
+}

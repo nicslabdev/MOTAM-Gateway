@@ -16,3 +16,5 @@ A continuación se comentan los distintos ficheros relacionados con estos desarr
 - Fichero *PositionSensorBasedOnGPSD.js*. Definición e implementación de un sensor de posición basado en las lecturas proporcionadas por el servicio "gpsd" de Linux, al que se ha conectado el GPS receptor [BU-353S4](http://usglobalsat.com/p-688-bu-353-s4.aspx) (PositionSensorBasedOnGPSD). Hace uso del módulo "[node-gpsd](https://www.npmjs.com/package/node-gpsd)" de Node.JS.
 
 - Fichero *sswnThread.py*. Script de python. Hebra lanzada por BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js para la notificación de los nuevos valores proporcionados por el GPS.
+
+- Fichero *package.json*. Necesario para la instalación de todos los módulos de Node.JS.
