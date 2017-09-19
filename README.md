@@ -5,7 +5,7 @@ En este repositorio se encuentran los desarrollos sobre la pasarela, alojada en 
 
 # Descripción de los distintos ficheros desarrollados #
 
-Existen ficheros Node.JS y scripts de Python. Node.JS llama a estos scripts de Python cuando es necesario que realicen ciertas tareas.
+Existen ficheros Node.JS, scripts de Python y scripts de bash. Node.JS llama a estos scripts de Python cuando es necesario que realicen ciertas tareas, al igual que con los de bash.
 
 A continuación se comentan los distintos ficheros relacionados con estos desarrollos, tanto aquellos con funcionalidad real como los creados para la realización de simulaciones:
 
@@ -18,3 +18,5 @@ A continuación se comentan los distintos ficheros relacionados con estos desarr
 - Fichero *sswnThread.py*. Script de python. Hebra lanzada por BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js para la notificación de los nuevos valores proporcionados por el GPS.
 
 - Fichero *package.json*. Necesario para la instalación de todos los módulos de Node.JS.
+
+- Fichero *usbDiscovery*. Se trata de un script de bash que devuelve el identificador y las rutas de los dispositivos conectados por USB. Es usado por el código principal.
