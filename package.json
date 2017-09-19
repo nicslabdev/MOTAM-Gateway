@@ -4,9 +4,10 @@
   "description": "MOTAM Gateway",
   "main": "BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js",
   "dependencies": {
-    "serialport": "^5.0.0",
     "bleno": "^0.4.2",
+    "dialog": "^0.3.1",
     "node-gpsd": "^0.3.0",
+    "serialport": "^5.0.0",
     "unidecode": "^0.1.8"
   },
   "devDependencies": {},
