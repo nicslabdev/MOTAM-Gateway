@@ -20,3 +20,7 @@ A continuación se comentan los distintos ficheros relacionados con estos desarr
 - Fichero *package.json*. Necesario para la instalación de todos los módulos de Node.JS.
 
 - Fichero *usbDiscovery*. Se trata de un script de bash que devuelve el identificador y las rutas de los dispositivos conectados por USB. Es usado por el código principal.
+
+- Fichero *MOTAM*. Se trata de un acceso directo. Debe estar colocado en el escritorio (/home/pi/Desktop/). Al hacer doble click sobre él, llama al script de bash "Start.sh", que arranca el script principal.
+
+- Fichero *Start.sh*. Es un script de bash que símplemente ejecuta el script principal "BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js" con permisos de superusuario.
