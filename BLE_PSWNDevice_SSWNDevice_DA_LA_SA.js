@@ -5,36 +5,35 @@
  * Developed for MOTAM project.
  */
 
-// Opening serial port for Arduino
 var SerialPort = require("serialport");
+var util = require('util');
+var execSync = require('child_process').execSync;
+var bleno = require('bleno');
+var fork = require('child_process').fork;
+var spawn = require('child_process').spawn;
+var dialog = require('dialog');
+
+// Opening serial port for Arduino
 var port = new SerialPort("/dev/ttyACM0",{
   baudRate: 9600
 });
 
-var util = require('util');
-
 //Kill all instances of bluetoothd (needed to work bleno with BlueZ >= 5.17) --------------------------
-var execSync = require('child_process').execSync;
 // console.log("Getting BlueZ version...");
 var bluezVersion = parseFloat(execSync("bluetoothd -v"));
 // console.log("BlueZ version: " + bluezVersion);
 if (bluezVersion >= 5.17) {
     // console.log("Killing all instances of bluetoothd (needed to work bleno with BlueZ >= 5.17...");
-    if (execSync("ps aux").indexOf("bluetoothd")>=0)
-{
-    execSync("killall bluetoothd");
-}    
+    if (execSync("ps aux").indexOf("bluetoothd")>=0) {
+        execSync("killall bluetoothd");
+    }    
     execSync("hciconfig hci0 up");
 }
 // ----------------------------------------------------------------------------------------------------
 
-var bleno = require('bleno');
-
 var BlenoPrimaryService = bleno.PrimaryService;
 var BlenoCharacteristic = bleno.Characteristic;
 var BlenoDescriptor = bleno.Descriptor;
-
-var fork = require('child_process').fork;
 
 //De la plataforma Arduino va a llegar lo siguiente:
 //  TSWN:50:IndoorTemperature - TemperatureValue
@@ -147,7 +146,6 @@ var hub = {
     }
 };
 
-
 console.log('Creating BLE peripheral...');
 
 // ---------------------- USB devices discovery -------------------------- //
@@ -155,6 +153,7 @@ console.log('Creating BLE peripheral...');
 // Execute usbDiscovery shell script that
 // list usb devices currently connected
 // usbDevices is an string which contains ID and path of usb devices
+
 var usbDevices = execSync("/home/pi/MOTAM/usbDiscovery");
 
 // separate each line (each device) in array elements
@@ -165,12 +164,12 @@ var obd2DevicePath;
 
 console.log('------------- List of connected devices -------------');
 for (line of arrayUsbDevices) {
-    // if IDMODELID = 2303: GPS GlobalSat BU-353S54
+    // if ID_MODEL_ID = 2303: GPS GlobalSat BU-353S54
     if(line.substr(0,4) == 2303) {
         gpsDevicePath = line.substr(5);
         console.log('GPS detected on '+gpsDevicePath);
 
-    // if IDMODELID = 7523: OBD2 ELM327 interface
+    // if ID_MODEL_ID = 7523: OBD2 ELM327 interface
     } else if(line.substr(0,4) == 7523) {
         obd2DevicePath = line.substr(5);
         console.log('OBD2 interface detected on '+obd2DevicePath);
@@ -193,15 +192,14 @@ if (!gpsDevicePath) {
     var pswnThread = fork('/home/pi/MOTAM/pswnThread.js', [gpsDevicePath]);
 
     pswnThread.on('message', function(pswnNewPos) {
-      if (pswnNotifyCallback != null && Math.max(Math.abs(pswnNewPos.latitude - pswnCurrentPos.latitude), Math.abs(pswnNewPos.longitude - pswnCurrentPos.longitude)) > pswnThreshold)
-      {
-    	var data = new Buffer(8);
-    	data.writeFloatLE(pswnNewPos.latitude, 0);
-    	data.writeFloatLE(pswnNewPos.longitude, 4);
-    	pswnNotifyCallback(data);
-      }
-      pswnCurrentPos = pswnNewPos;
-      console.log('POSITION ' + util.inspect(pswnCurrentPos, false, null));
+        if (pswnNotifyCallback != null && Math.max(Math.abs(pswnNewPos.latitude - pswnCurrentPos.latitude), Math.abs(pswnNewPos.longitude - pswnCurrentPos.longitude)) > pswnThreshold) {
+        	var data = new Buffer(8);
+        	data.writeFloatLE(pswnNewPos.latitude, 0);
+        	data.writeFloatLE(pswnNewPos.longitude, 4);
+        	pswnNotifyCallback(data);
+        }
+        pswnCurrentPos = pswnNewPos;
+        console.log('POSITION ' + util.inspect(pswnCurrentPos, false, null));
     });
 }
 
@@ -274,65 +272,48 @@ util.inherits(PositionThresholdCharacteristic, BlenoCharacteristic);
 
 // ----------------------------- SSWN Thread ----------------------------- //
 
-
 var sswnNotifyCallback;
 var sswnThreshold = 0;
 var sswnCurrentSpeed = 0;
 
-var spawn = require('child_process').spawn;
-var obdsim = spawn('obdsim', ['-g', 'gui_fltk'], {stdio: ['ignore',1,'ignore']});
+// if not connected a OBD2 interface device
+if (!obd2DevicePath) {
+    // execute an alert dialog. If you press OK, it will run the OBD2 interface simulator
+    dialog.info("OBD2 interface not found.\r\nRun the simulator?", function(exitCode) {
+        if (exitCode == 0) {
+            var obdsim = spawn ('obdsim', ['-g', 'gui_fltk'],{stdio: 'pipe'});
+            obdsim.stdout.on("data", function(data) {
+                console.log("PRUEBA: "+data);
+            });
+            // var sleep = require('sleep');
+            // sleep.sleep(1);
+            // execSync('killall obdsim');
+        }
+    });
 
-// require('streamifier').createReadStream('test').pipe(obdsim.stdio[1]);
-var line = obdsim.stdio[1].read();
-console.log('PRUEBA '+line);
+// if OBD2 interface device connected, run it
+} else {
+    // Initialize sswnThread.py python script
+    var spawn = require('child_process').spawn,
+        py    = spawn('python', ['/home/pi/MOTAM/sswnThread.py']),
+        data = obd2DevicePath;
+    // When python script send speed to node, this is saved in "data"
+    py.stdout.on('data', function(data) {
+        //Receive speed from pyOBD_node.py python Script
+        sswnNewSpeed = parseInt(data,10);
+        if (sswnNotifyCallback != null && Math.abs(sswnNewSpeed - sswnCurrentSpeed) > sswnThreshold) {
+            var dataBLE = new Buffer(4);
+            dataBLE.writeInt32LE(sswnNewSpeed, 0);
+            sswnNotifyCallback(dataBLE);
+        }
+        console.log('OBD2-Speed: ' + sswnNewSpeed);
+        sswnCurrentSpeed = sswnNewSpeed;
+    });
 
-// var obdsim = spawn('obdsim', ['-g', 'gui_fltk']);
-//  obdsim.stdout.on('obdSimData', (obdSimData) => {
-//      console.log('stdout: ${data}');
-//  });
-
-// // obdsim.stdout.flush();
-
-
-
-// // if not connected a OBD2 interface device: run simulator
-// if (!obd2DevicePath) {
-//     console.log('OBD2 interface device not detected')
-//     // execute an alert dialog. If you press OK, it will run the OBD2 interface simulator
-//     var dialog = require('dialog');
-//     dialog.info("OBD2 interface not found.\r\nRun the simulator?", function(exitCode) {
-//         if (exitCode == 0) {
-//             var returnCommand = exec("obdsim -g gui_fltk");
-//         } else {
-//             console.log("Simulator will not be ejecuted");
-//         }
-//     });
-
-
-// // if OBD2 interface device connected, run it
-// } else {
-//     // Initialize sswnThread.py python script
-//     var spawn = require('child_process').spawn,
-//         py    = spawn('python', ['/home/pi/MOTAM/sswnThread.py']),
-//         data = obd2DevicePath;
-
-//     // When python script send speed to node, this is saved in "data"
-//     py.stdout.on('data', function(data) {
-//         //Receive speed from pyOBD_node.py python Script
-//         sswnNewSpeed = parseInt(data,10);
-//         if (sswnNotifyCallback != null && Math.abs(sswnNewSpeed - sswnCurrentSpeed) > sswnThreshold) {
-//             var dataBLE = new Buffer(4);
-//             dataBLE.writeInt32LE(sswnNewSpeed, 0);
-//             sswnNotifyCallback(dataBLE);
-//         }
-//         console.log('OBD2-Speed: ' + sswnNewSpeed);
-//         sswnCurrentSpeed = sswnNewSpeed;
-//     });
-
-//     py.stdin.write(JSON.stringify(data));
-//     py.stdin.end();
-// }
-
+    // Write obd2DevicePath from this thread to sswnThread.py
+    py.stdin.write(JSON.stringify(data));
+    py.stdin.end();
+}
 
 // ----------------------------- Speed Value Characteristic ----------------------------- //
 
@@ -589,6 +570,5 @@ bleno.on('advertisingStop', function () {
 bleno.on('servicesSet', function () {
         console.log('on -> servicesSet');
 });
-
 
 console.log('BLE peripheral created.');
