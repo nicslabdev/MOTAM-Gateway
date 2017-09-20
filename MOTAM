@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=MOTAM
+Comment=Start MOTAM main program
+Exec=/home/pi/MOTAM/Start.sh
+Terminal=true
+Type=Application
