@@ -1,7 +1,7 @@
 /**
  * Main code for create BLE peripheral devices of the MOTAM platform.
  * Created by Jesus Rodriguez, May 27, 2015.
- * Modified by Manuel Montenegro, Sept 19, 2017.
+ * Modified by Manuel Montenegro, Sept 28, 2017.
  * Developed for MOTAM project.
  */
 
@@ -154,7 +154,7 @@ console.log('Creating BLE peripheral...');
 // list usb devices currently connected
 // usbDevices is an string which contains ID and path of usb devices
 
-var usbDevices = execSync("/home/pi/MOTAM/usbDiscovery");
+var usbDevices = execSync("/home/pi/MOTAM/util/usbDiscovery");
 
 // separate each line (each device) in array elements
 var arrayUsbDevices = usbDevices.toString().split("\n");
@@ -162,7 +162,7 @@ var arrayUsbDevices = usbDevices.toString().split("\n");
 var gpsDevicePath;
 var obd2DevicePath;
 
-console.log('------------- List of connected devices -------------');
+console.log('------------- Connected devices list ----------------');
 for (line of arrayUsbDevices) {
     // if ID_MODEL_ID = 2303: GPS GlobalSat BU-353S54
     if(line.substr(0,4) == 2303) {
@@ -177,6 +177,122 @@ for (line of arrayUsbDevices) {
 }
 console.log('-----------------------------------------------------');
 
+
+
+// ----------------------------- SSWN Thread ----------------------------- //
+
+var sswnNotifyCallback;
+var sswnThreshold = 0;
+var sswnCurrentSpeed = 0;
+
+// if not connected a OBD2 interface device
+if (!obd2DevicePath) {
+    // execute an GUI dialog. If you press YES, it will run the OBD2 interface simulator.
+    // zenity show in shell a warning message, so stdin and stderr is ignored.
+    // zenity returns '0' for yes and '1' for no
+    var runSim = execSync("/home/pi/MOTAM/util/zenity",{stdio:['ignore','pipe','ignore']});
+    
+    // if the choice has been "yes"
+    if (runSim==0) {
+        // it runs obdsim
+        var obdsim = spawn('obdsim', ['-g', 'gui_fltk']);
+
+
+        //COMMANDO PARA SACAR EL PUERTO: ps ax | grep "obdsim -g gui_fltk" | grep -v grep |  awk '{ print $2 }'
+
+    }
+
+// if OBD2 interface device connected, run it
+} else {
+    // Initialize sswnThread.py python script
+    var spawn = require('child_process').spawn,
+        py    = spawn('python', ['/home/pi/MOTAM/util/sswnThread.py']),
+        data = obd2DevicePath;
+    // When python script send speed to node, this is saved in "data"
+    py.stdout.on('data', function(data) {
+        //Receive speed from pyOBD_node.py python Script
+        sswnNewSpeed = parseInt(data,10);
+        if (sswnNotifyCallback != null && Math.abs(sswnNewSpeed - sswnCurrentSpeed) > sswnThreshold) {
+            var dataBLE = new Buffer(4);
+            dataBLE.writeInt32LE(sswnNewSpeed, 0);
+            sswnNotifyCallback(dataBLE);
+        }
+        console.log('OBD2-Speed: ' + sswnNewSpeed);
+        sswnCurrentSpeed = sswnNewSpeed;
+    });
+
+    // Write obd2DevicePath from this thread to sswnThread.py
+    py.stdin.write(JSON.stringify(data));
+    py.stdin.end();
+}
+
+// ----------------------------- Speed Value Characteristic ----------------------------- //
+
+var SpeedValueCharacteristic = function () {
+SpeedValueCharacteristic.super_.call(this, {
+    uuid: hub.nodes.rpi.sensors.SSWN.SpeedValue.uuid,
+    properties: ['read','notify'],
+    descriptors: [
+        new BlenoDescriptor({
+            uuid: '2901',
+            value: hub.nodes.rpi.sensors.SSWN.SpeedValue.descriptorValue
+        })
+    ],
+    onReadRequest: function (offset, callback) {
+    console.log('SpeedValueCharacteristic onReadRequest - offset=' + offset + ' ,callback=' + callback);
+
+    var data = new Buffer(4);
+    data.writeInt32LE(sswnCurrentSpeed, 0);
+        callback(this.RESULT_SUCCESS, data);
+    },
+    onSubscribe: function(maxValueSize, updateValueCallback) { 
+    console.log('SpeedValueCharacteristic onSubscribe - maxValueSize=' + maxValueSize + ' ,updateValueCallback=' + updateValueCallback);
+
+    sswnNotifyCallback = updateValueCallback;
+    },
+    onUnsubscribe: function() {
+        console.log('SpeedValueCharacteristic onUnsubscribe');
+
+    sswnNotifyCallback = null;
+    },
+    onNotify: function() {
+    console.log('SpeedValueCharacteristic onNotify');
+    }
+});
+};
+
+util.inherits(SpeedValueCharacteristic, BlenoCharacteristic);
+
+
+// ----------------------------- Speed Threshold Characteristic ----------------------------- //
+
+var SpeedThresholdCharacteristic = function () {
+SpeedThresholdCharacteristic.super_.call(this, {
+    uuid: hub.nodes.rpi.sensors.SSWN.SpeedThreshold.uuid,
+    properties: ['write', 'writeWithoutResponse'],
+    descriptors: [
+        new BlenoDescriptor({
+            uuid: '2901',
+            value: hub.nodes.rpi.sensors.SSWN.SpeedThreshold.descriptorValue
+        })
+    ],
+    onWriteRequest: function (data, offset, withoutResponse, callback) {
+
+        console.log('SpeedThresholdCharacteristic onWriteRequest - data=' + data.toString('hex') + ', offset=' + offset + ', withoutResponse=' + withoutResponse + ', callback=' + callback);
+    
+    //TODO Change to readInt16LE()???
+    sswnThreshold = data.readInt32LE(0);
+    console.log('sswnThreshold: ' + sswnThreshold);
+
+    callback(this.RESULT_SUCCESS);
+    }
+});
+};
+
+util.inherits(SpeedThresholdCharacteristic, BlenoCharacteristic);
+
+
+
 // ----------------------------- PSWN Thread ----------------------------- //
 
 var pswnNotifyCallback;
@@ -189,20 +305,19 @@ if (!gpsDevicePath) {
     console.log('GPS device not detected')
 } else {
     // Care! Argument of child process is passed between []
-    var pswnThread = fork('/home/pi/MOTAM/pswnThread.js', [gpsDevicePath]);
+    var pswnThread = fork('/home/pi/MOTAM/util/pswnThread.js', [gpsDevicePath]);
 
     pswnThread.on('message', function(pswnNewPos) {
         if (pswnNotifyCallback != null && Math.max(Math.abs(pswnNewPos.latitude - pswnCurrentPos.latitude), Math.abs(pswnNewPos.longitude - pswnCurrentPos.longitude)) > pswnThreshold) {
-        	var data = new Buffer(8);
-        	data.writeFloatLE(pswnNewPos.latitude, 0);
-        	data.writeFloatLE(pswnNewPos.longitude, 4);
-        	pswnNotifyCallback(data);
+            var data = new Buffer(8);
+            data.writeFloatLE(pswnNewPos.latitude, 0);
+            data.writeFloatLE(pswnNewPos.longitude, 4);
+            pswnNotifyCallback(data);
         }
         pswnCurrentPos = pswnNewPos;
         console.log('POSITION ' + util.inspect(pswnCurrentPos, false, null));
     });
 }
-
 
 // ----------------------------- Position Value Characteristic ----------------------------- //
 
@@ -269,116 +384,6 @@ PositionThresholdCharacteristic.super_.call(this, {
 
 util.inherits(PositionThresholdCharacteristic, BlenoCharacteristic);
 
-
-// ----------------------------- SSWN Thread ----------------------------- //
-
-var sswnNotifyCallback;
-var sswnThreshold = 0;
-var sswnCurrentSpeed = 0;
-
-// if not connected a OBD2 interface device
-if (!obd2DevicePath) {
-    // execute an alert dialog. If you press OK, it will run the OBD2 interface simulator
-    dialog.info("OBD2 interface not found.\r\nRun the simulator?", function(exitCode) {
-        if (exitCode == 0) {
-            var obdsim = spawn ('obdsim', ['-g', 'gui_fltk'],{stdio: 'pipe'});
-            obdsim.stdout.on("data", function(data) {
-                console.log("PRUEBA: "+data);
-            });
-            // var sleep = require('sleep');
-            // sleep.sleep(1);
-            // execSync('killall obdsim');
-        }
-    });
-
-// if OBD2 interface device connected, run it
-} else {
-    // Initialize sswnThread.py python script
-    var spawn = require('child_process').spawn,
-        py    = spawn('python', ['/home/pi/MOTAM/sswnThread.py']),
-        data = obd2DevicePath;
-    // When python script send speed to node, this is saved in "data"
-    py.stdout.on('data', function(data) {
-        //Receive speed from pyOBD_node.py python Script
-        sswnNewSpeed = parseInt(data,10);
-        if (sswnNotifyCallback != null && Math.abs(sswnNewSpeed - sswnCurrentSpeed) > sswnThreshold) {
-            var dataBLE = new Buffer(4);
-            dataBLE.writeInt32LE(sswnNewSpeed, 0);
-            sswnNotifyCallback(dataBLE);
-        }
-        console.log('OBD2-Speed: ' + sswnNewSpeed);
-        sswnCurrentSpeed = sswnNewSpeed;
-    });
-
-    // Write obd2DevicePath from this thread to sswnThread.py
-    py.stdin.write(JSON.stringify(data));
-    py.stdin.end();
-}
-
-// ----------------------------- Speed Value Characteristic ----------------------------- //
-
-var SpeedValueCharacteristic = function () {
-SpeedValueCharacteristic.super_.call(this, {
-    uuid: hub.nodes.rpi.sensors.SSWN.SpeedValue.uuid,
-    properties: ['read','notify'],
-    descriptors: [
-        new BlenoDescriptor({
-            uuid: '2901',
-            value: hub.nodes.rpi.sensors.SSWN.SpeedValue.descriptorValue
-        })
-    ],
-    onReadRequest: function (offset, callback) {
-	console.log('SpeedValueCharacteristic onReadRequest - offset=' + offset + ' ,callback=' + callback);
-
-	var data = new Buffer(4);
-	data.writeInt32LE(sswnCurrentSpeed, 0);
-        callback(this.RESULT_SUCCESS, data);
-    },
-    onSubscribe: function(maxValueSize, updateValueCallback) { 
-	console.log('SpeedValueCharacteristic onSubscribe - maxValueSize=' + maxValueSize + ' ,updateValueCallback=' + updateValueCallback);
-
-	sswnNotifyCallback = updateValueCallback;
-    },
-    onUnsubscribe: function() {
-    	console.log('SpeedValueCharacteristic onUnsubscribe');
-
-	sswnNotifyCallback = null;
-    },
-    onNotify: function() {
-	console.log('SpeedValueCharacteristic onNotify');
-    }
-});
-};
-
-util.inherits(SpeedValueCharacteristic, BlenoCharacteristic);
-
-
-// ----------------------------- Speed Threshold Characteristic ----------------------------- //
-
-var SpeedThresholdCharacteristic = function () {
-SpeedThresholdCharacteristic.super_.call(this, {
-    uuid: hub.nodes.rpi.sensors.SSWN.SpeedThreshold.uuid,
-    properties: ['write', 'writeWithoutResponse'],
-    descriptors: [
-        new BlenoDescriptor({
-            uuid: '2901',
-            value: hub.nodes.rpi.sensors.SSWN.SpeedThreshold.descriptorValue
-        })
-    ],
-    onWriteRequest: function (data, offset, withoutResponse, callback) {
-
-    	console.log('SpeedThresholdCharacteristic onWriteRequest - data=' + data.toString('hex') + ', offset=' + offset + ', withoutResponse=' + withoutResponse + ', callback=' + callback);
-	
-	//TODO Change to readInt16LE()???
-	sswnThreshold = data.readInt32LE(0);
-	console.log('sswnThreshold: ' + sswnThreshold);
-
-	callback(this.RESULT_SUCCESS);
-    }
-});
-};
-
-util.inherits(SpeedThresholdCharacteristic, BlenoCharacteristic);
 
 
 

@@ -1,0 +1,2 @@
+zenity --question --title "OBDII not found" --text "Do you want to start OBDII simulator?"
+echo $?
