@@ -14,7 +14,6 @@ import time
 import signal
 import threading
 
-obd.logger.setLevel(obd.logging.DEBUG)
 
 time_interval = 1
 class ServiceExit(Exception):
@@ -29,7 +28,7 @@ def main():
 
 	#read the port from nodejs parent
 	port = read_in()
-
+	
 	connection = obd.Async(portstr=port, fast=False) # create an asynchronous connection
 
 	# keep track of the car's SPEED
@@ -44,7 +43,7 @@ def main():
 
 	except ServiceExit:
 		#stop the connection when finish the thread
-		connection.stop();
+		connection.stop()
 
 # this function is for reading data from nodeJS caller
 def read_in():
