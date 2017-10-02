@@ -1,7 +1,7 @@
 /**
  * Main code for create BLE peripheral devices of the MOTAM platform.
  * Created by Jesus Rodriguez, May 27, 2015.
- * Modified by Manuel Montenegro, Sept 28, 2017.
+ * Modified by Manuel Montenegro, Oct 2, 2017.
  * Developed for MOTAM project.
  */
 
@@ -199,38 +199,42 @@ if (!obd2DevicePath) {
             execSync("killall obdsim");
         }
 
+// SOCAT
+        // spawn('socat', ['-d', '-d', 'pty,raw,echo=0,link=/tmp/ttyV0', 'pty,raw,echo=0,link=/tmp/ttyV1']);
+
         // run obdsim with GUI
-        var obdsim = spawn('obdsim', ['-g', 'gui_fltk']);
+        var obdsim = spawn('obdsim', ['-g', 'gui_fltk', '-t', '/dev/tty50']);
 
-        // taking the obdsim virtual port. The shell command return a string with \n
-        var obdsimPort = execSync("ps ax | grep \"obdsim -g gui_fltk\" | grep -v grep |  awk '{ print $2 }'");
-        // result is splited in array. Then, take the first element and convert to string
-        obd2DevicePath = "/dev/"+obdsimPort.toString().split("\n")[0];
+        obd2DevicePath = '/dev/tty50';
+
     }
+} 
+
+
+// if there is a connected obd interface or running obd sim..
+if (obd2DevicePath) {
+	console.log("OBD2 PORT: "+obd2DevicePath);
+	// Initialize sswnThread.py python script
+	var spawn = require('child_process').spawn,
+	    py    = spawn('python', ['/home/pi/MOTAM/util/sswnThread.py']),
+	    data = obd2DevicePath;
+	// When python script send some data to node, this is saved in "data"
+	py.stdout.on('data', function(data) {
+	    // Receive speed from pyOBD_node.py python Script
+	    sswnNewSpeed = parseInt(data,10);
+	    if (sswnNotifyCallback != null && Math.abs(sswnNewSpeed - sswnCurrentSpeed) > sswnThreshold) {
+	        var dataBLE = new Buffer(4);
+	        dataBLE.writeInt32LE(sswnNewSpeed, 0);
+	        sswnNotifyCallback(dataBLE);
+	    }
+	    console.log('OBD2-Speed: ' + sswnNewSpeed);
+	    sswnCurrentSpeed = sswnNewSpeed;
+	});
+
+	// Write obd2DevicePath from this thread to sswnThread.py
+	py.stdin.write(JSON.stringify(data));
+	py.stdin.end();
 }
-
-console.log("OBD2 PORT: "+obd2DevicePath);
-// Initialize sswnThread.py python script
-var spawn = require('child_process').spawn,
-    py    = spawn('python', ['/home/pi/MOTAM/util/sswnThread.py']),
-    data = obd2DevicePath;
-// When python script send some data to node, this is saved in "data"
-py.stdout.on('data', function(data) {
-    console.log("DATOS RECIVIDOS EN NODE: ");
-    //Receive speed from pyOBD_node.py python Script
-    sswnNewSpeed = parseInt(data,10);
-    if (sswnNotifyCallback != null && Math.abs(sswnNewSpeed - sswnCurrentSpeed) > sswnThreshold) {
-        var dataBLE = new Buffer(4);
-        dataBLE.writeInt32LE(sswnNewSpeed, 0);
-        sswnNotifyCallback(dataBLE);
-    }
-    console.log('OBD2-Speed: ' + sswnNewSpeed);
-    sswnCurrentSpeed = sswnNewSpeed;
-});
-
-// Write obd2DevicePath from this thread to sswnThread.py
-py.stdin.write(JSON.stringify(data));
-py.stdin.end();
 
 
 // ----------------------------- Speed Value Characteristic ----------------------------- //

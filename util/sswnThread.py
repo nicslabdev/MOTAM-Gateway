@@ -5,8 +5,6 @@
 ###############################################
 
 # This script should be started by nodeJS
-# Debugging: Uncomment all the print() and sys.stdout.flush() 
-# and start this script "sudo python sswnThread.py"
 
 import obd
 import sys, json, numpy as np
@@ -28,9 +26,8 @@ def main():
 
 	#read the port from nodejs parent
 	port = read_in()
-	
-	connection = obd.Async(portstr=port, fast=False) # create an asynchronous connection
 
+	connection = obd.Async(portstr=port, fast=False) # create an asynchronous connection
 	# keep track of the car's SPEED
 	connection.watch(obd.commands.SPEED, callback=new_value)
 
@@ -60,7 +57,6 @@ def new_value(response):
 
 # this is the interrupt handler. Used when finish the thread (ctrl+c from keyboard)
 def service_shutdown(signum, frame):
-    # print('Caught signal %d' % signum)
     raise ServiceExit
 
 # start process 
