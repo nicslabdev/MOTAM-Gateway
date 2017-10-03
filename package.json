@@ -1,22 +1,37 @@
 {
-  "name": "MOTAM",
+  "name": "motam",
   "version": "0.0.1",
   "description": "MOTAM Gateway",
   "main": "BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js",
+  "directories": {
+    "doc": "docs"
+  },
   "dependencies": {
     "bleno": "^0.4.2",
-    "dialog": "^0.3.1",
     "node-gpsd": "^0.3.0",
     "serialport": "^5.0.0",
     "unidecode": "^0.1.8"
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "sudo node BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nicslabdev/MOTAM-Gateway.git"
   },
   "keywords": [
-    "IoT"
+    "MOTAM",
+    "Raspberry",
+    "Pi",
+    "RPi",
+    "DEPHISIT",
+    "gateway"
   ],
   "author": "Manuel Montenegro",
-  "license": "ISC"
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nicslabdev/MOTAM-Gateway/issues"
+  },
+  "homepage": "https://github.com/nicslabdev/MOTAM-Gateway#readme"
 }

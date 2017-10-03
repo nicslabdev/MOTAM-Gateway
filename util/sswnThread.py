@@ -1,7 +1,7 @@
 ###############################################
 # Python Script for use OBDII Scanner ELM327  #
 # MOTAM Proyect                               #
-# Created by Manuel Montenegro, 19-09-2017    #
+# Created by Manuel Montenegro, 03-10-2017    #
 ###############################################
 
 # This script should be started by nodeJS
@@ -27,7 +27,10 @@ def main():
 	#read the port from nodejs parent
 	port = read_in()
 
-	connection = obd.Async(portstr=port, fast=False) # create an asynchronous connection
+	if port=="/tmp/ttyV1":
+		connection = obd.Async(portstr=port, baudrate=9600) # create an asynchronous connection
+	else:
+		connection = obd.Async(portstr=port, fast=False) # create an asynchronous connection
 	# keep track of the car's SPEED
 	connection.watch(obd.commands.SPEED, callback=new_value)
 

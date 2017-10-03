@@ -1,7 +1,7 @@
 /**
  * Main code for create BLE peripheral devices of the MOTAM platform.
  * Created by Jesus Rodriguez, May 27, 2015.
- * Modified by Manuel Montenegro, Oct 2, 2017.
+ * Modified by Manuel Montenegro, Oct 3, 2017.
  * Developed for MOTAM project.
  */
 
@@ -11,7 +11,6 @@ var execSync = require('child_process').execSync;
 var bleno = require('bleno');
 var fork = require('child_process').fork;
 var spawn = require('child_process').spawn;
-var dialog = require('dialog');
 
 // Opening serial port for Arduino
 var port = new SerialPort("/dev/ttyACM0",{
@@ -29,16 +28,12 @@ if (bluezVersion >= 5.17) {
     }    
     execSync("hciconfig hci0 up");
 }
+
 // ----------------------------------------------------------------------------------------------------
 
 var BlenoPrimaryService = bleno.PrimaryService;
 var BlenoCharacteristic = bleno.Characteristic;
 var BlenoDescriptor = bleno.Descriptor;
-
-//De la plataforma Arduino va a llegar lo siguiente:
-//  TSWN:50:IndoorTemperature - TemperatureValue
-//  TSWN:50:IndoorTemperature - TemperatureThreshold
-//que se habra generado a partir de TSWN(pin11, 30, 5, 0)
 
 
 //TODO: Do this dinamically!!!
@@ -192,26 +187,26 @@ if (!obd2DevicePath) {
     // zenity returns '0' for yes and '1' for no
     var runSim = execSync("/home/pi/MOTAM/util/zenity",{stdio:['ignore','pipe','ignore']});
     
-    // if the choice has been "yes"
+    // if the choice has been "yes": running simulator
     if (runSim==0) {
         // kill previous obdsim processes
         if (execSync("ps aux").indexOf("obdsim")>=0) {
             execSync("killall obdsim");
         }
 
-// SOCAT
-        // spawn('socat', ['-d', '-d', 'pty,raw,echo=0,link=/tmp/ttyV0', 'pty,raw,echo=0,link=/tmp/ttyV1']);
+        //socat generates a link to two connected pts socket (like /dev/pts/0 and /dev/pts/1)
+        spawn('socat', ['pty,raw,echo=0,link=/tmp/ttyV0', 'pty,raw,echo=0,link=/tmp/ttyV1']);
 
         // run obdsim with GUI
-        var obdsim = spawn('obdsim', ['-g', 'gui_fltk', '-t', '/dev/tty50']);
+        var obdsim = spawn('obdsim', ['-g', 'gui_fltk', '-t', '/tmp/ttyV0']);
 
-        obd2DevicePath = '/dev/tty50';
-
+        // this is the DevicePath for python thread created by socat
+        obd2DevicePath = '/tmp/ttyV1';
     }
 } 
 
 
-// if there is a connected obd interface or running obd sim..
+// if there is a connected obd interface or running obdsim...
 if (obd2DevicePath) {
 	console.log("OBD2 PORT: "+obd2DevicePath);
 	// Initialize sswnThread.py python script
