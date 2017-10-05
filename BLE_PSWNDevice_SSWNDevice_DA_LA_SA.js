@@ -1,7 +1,7 @@
 /**
  * Main code for create BLE peripheral devices of the MOTAM platform.
  * Created by Jesus Rodriguez, May 27, 2015.
- * Modified by Manuel Montenegro, Oct 3, 2017.
+ * Modified by Manuel Montenegro, Oct 5, 2017.
  * Developed for MOTAM project.
  */
 
@@ -208,7 +208,6 @@ if (!obd2DevicePath) {
 
 // if there is a connected obd interface or running obdsim...
 if (obd2DevicePath) {
-	console.log("OBD2 PORT: "+obd2DevicePath);
 	// Initialize sswnThread.py python script
 	var spawn = require('child_process').spawn,
 	    py    = spawn('python', ['/home/pi/MOTAM/util/sswnThread.py']),
