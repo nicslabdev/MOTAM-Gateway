@@ -1,7 +1,7 @@
 ###############################################
 # Python Script for load OBDII & GPS sessions #
 # MOTAM Proyect                               #
-# Created by Manuel Montenegro, 05-10-2017    #
+# Created by Manuel Montenegro, 06-10-2017    #
 ###############################################
 
 # This script should be started by nodeJS
@@ -9,20 +9,27 @@
 import sqlite3
 import signal
 import time
+import sys, json, numpy as np
+import threading
 
 class ServiceExit(Exception):
 	# this is necessary for interrupt exception
     pass
 
 def main():
-	# Register the signal handlers for interrupting the thread
-	signal.signal(signal.SIGTERM, service_shutdown)
-	signal.signal(signal.SIGINT, service_shutdown)
+	# # Register the signal handlers for interrupting the thread
+	# signal.signal(signal.SIGTERM, service_shutdown)
+	# signal.signal(signal.SIGINT, service_shutdown)
+
+	# information about sessionPath and device that it has to simulate
+	readedData = read_in()
+	sessionPath = readedData[0]
+	device = readedData[1]
 
 	# executes this while dont receive a terminal signal from Node.JS 
 	try:
 		# connection to database
-		db=sqlite3.connect('/home/pi/MOTAM/sessions/UMA-5_10_17.db')
+		db=sqlite3.connect(sessionPath)
 		tripCurs = db.cursor()
 		gpsCurs = db.cursor()
 		obdCurs = db.cursor()
@@ -51,7 +58,20 @@ def main():
 					lat = gpsRow[0]
 					lon = gpsRow[1]
 
-					print ("Lat: %f Lon: %f Speed: %d" % (lat,lon, speed))
+					# if you want information of obd...
+					if (device == 'obd'):
+						
+						new_value (speed)
+
+					# if you want information of gps...
+					elif (device == 'gps'):
+
+						coord = [lat,lon]
+						new_value(coord)
+
+
+					# sleep the thread: simulating gps signal delay
+					time.sleep(diff)
 
 					# ---- only for debug: neccesary to see database read delay
 					# print (int(time.strftime("%s"))-tiempoInicio)
@@ -59,7 +79,7 @@ def main():
 					# ---------------------------------------------------------
 
 					# sleep the thread: simulating gps signal delay
-					time.sleep(diff)
+					
 
 				# if this is the first row, go to second iteration
 				else:				
@@ -80,13 +100,21 @@ def main():
 
 # this function is for reading data from node.JS caller
 def read_in():
+	# read the data (sessionPath and device) from Node.JS
 	lines = sys.stdin.readlines()
-    #Since our input would only be having one line, parse our JSON data from that
-	return json.loads(lines[0])
+	# delete all the \n introduced for separate device and dbpath
+	data = [str(lines[0]).replace("\n",""), str(lines[1]).replace("\n","")]
+	return data
 
-# this is the interrupt handler. Used when finish the thread (ctrl+c from keyboard)
-def service_shutdown(signum, frame):
-    raise ServiceExit
+# this function is called when a new value arrive
+def new_value(response):
+	#sleep the thread because too many responses
+	print(response)
+	sys.stdout.flush()
+
+# # this is the interrupt handler. Used when finish the thread (ctrl+c from keyboard)
+# def service_shutdown(signum, frame):
+#     raise ServiceExit
 
 # start process 
 if __name__ == '__main__':

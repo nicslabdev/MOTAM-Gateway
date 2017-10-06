@@ -1,7 +1,7 @@
 /**
  * Main code for create BLE peripheral devices of the MOTAM platform.
  * Created by Jesus Rodriguez, May 27, 2015.
- * Modified by Manuel Montenegro, Oct 5, 2017.
+ * Modified by Manuel Montenegro, Oct 6, 2017.
  * Developed for MOTAM project.
  */
 
@@ -11,6 +11,9 @@ var execSync = require('child_process').execSync;
 var bleno = require('bleno');
 var fork = require('child_process').fork;
 var spawn = require('child_process').spawn;
+
+// boolean var that indicates if GPS has to load a session or not
+var loadSession = false;
 
 // Opening serial port for Arduino
 var port = new SerialPort("/dev/ttyACM0",{
@@ -182,13 +185,13 @@ var sswnCurrentSpeed = 0;
 
 // if not connected a OBD2 interface device
 if (!obd2DevicePath) {
-    // execute an GUI dialog. If you press YES, it will run the OBD2 interface simulator.
-    // zenity show in shell a warning message, so stdin and stderr is ignored.
-    // zenity returns '0' for yes and '1' for no
+    // execute an GUI dialog by a bash script
+    // zenity always shows a shell warning message, so stdin and stderr is ignored.
+    // zenity returns a string with the name of the choice
     var runSim = execSync("/home/pi/MOTAM/util/zenity",{stdio:['ignore','pipe','ignore']});
     
-    // if the choice has been "yes": running simulator
-    if (runSim==0) {
+    // if the choice is "running obdsim":
+    if (runSim.toString().trim()==='Run OBDII interface simulator') {
         // kill previous obdsim processes
         if (execSync("ps aux").indexOf("obdsim")>=0) {
             execSync("killall obdsim");
@@ -202,6 +205,37 @@ if (!obd2DevicePath) {
 
         // this is the DevicePath for python thread created by socat
         obd2DevicePath = '/tmp/ttyV1';
+
+    // if the choice is "load a session":
+    } else if (runSim.toString().trim() === 'Load a session') {
+    	loadSession = true;
+
+		// This is the database that we want load
+		var sessionPath = '/home/pi/MOTAM/sessions/UMA-5_10_17.db';
+		// This is the device we want simulate. Python thread can send obd information or gps information
+		var device = 'obd';
+
+		loadSessionObdPy    = spawn('python', ['/home/pi/MOTAM/util/loadSession.py']),
+    		dataSessionPath = sessionPath,
+    		dataDevice = device;
+
+		loadSessionObdPy.stdout.on('data', function(data) {
+		    // Receive speed from pyOBD_node.py python Script
+		    sswnNewSpeed = parseInt(data,10);
+		    if (sswnNotifyCallback != null && Math.abs(sswnNewSpeed - sswnCurrentSpeed) > sswnThreshold) {
+		        var dataBLE = new Buffer(4);
+		        dataBLE.writeInt32LE(sswnNewSpeed, 0);
+		        sswnNotifyCallback(dataBLE);
+		    }
+		    console.log('OBD2-Speed: ' + sswnNewSpeed);
+		    sswnCurrentSpeed = sswnNewSpeed;
+		});
+		// Write sessionPath and de from this thread to sswnThread.py
+		loadSessionObdPy.stdin.write(dataSessionPath);
+		loadSessionObdPy.stdin.write("\n");
+		loadSessionObdPy.stdin.write(dataDevice);
+		loadSessionObdPy.stdin.write("\n");
+		loadSessionObdPy.stdin.end();
     }
 } 
 
@@ -209,11 +243,10 @@ if (!obd2DevicePath) {
 // if there is a connected obd interface or running obdsim...
 if (obd2DevicePath) {
 	// Initialize sswnThread.py python script
-	var spawn = require('child_process').spawn,
-	    py    = spawn('python', ['/home/pi/MOTAM/util/sswnThread.py']),
-	    data = obd2DevicePath;
+    sswnPy    = spawn('python', ['/home/pi/MOTAM/util/sswnThread.py']),
+    	data = obd2DevicePath;
 	// When python script send some data to node, this is saved in "data"
-	py.stdout.on('data', function(data) {
+	sswnPy.stdout.on('data', function(data) {
 	    // Receive speed from pyOBD_node.py python Script
 	    sswnNewSpeed = parseInt(data,10);
 	    if (sswnNotifyCallback != null && Math.abs(sswnNewSpeed - sswnCurrentSpeed) > sswnThreshold) {
@@ -225,9 +258,9 @@ if (obd2DevicePath) {
 	    sswnCurrentSpeed = sswnNewSpeed;
 	});
 
-	// Write obd2DevicePath from this thread to sswnThread.py
-	py.stdin.write(JSON.stringify(data));
-	py.stdin.end();
+	// Write obd2DevicePath from this thread to sswnThread.py thread
+	sswnPy.stdin.write(JSON.stringify(data));
+	sswnPy.stdin.end();
 }
 
 
@@ -306,8 +339,39 @@ var pswnCurrentPos = {latitude: 0, longitude: 0};
 var pswnThreshold = 0;
 
 // Check if exist a connected GPS Device
-if (!gpsDevicePath) {
-    console.log('GPS device not detected')
+if (!gpsDevicePath && loadSession) {
+	// This is the database that we want load
+	var sessionPath = '/home/pi/MOTAM/sessions/UMA-5_10_17.db';
+	// This is the device we want simulate. Python thread can send obd information or gps information
+	var device = 'gps';
+
+	loadSessionGpsPy    = spawn('python', ['/home/pi/MOTAM/util/loadSession.py']),
+		dataSessionPath = sessionPath,
+		dataDevice = device;
+
+	loadSessionGpsPy.stdout.on('data', function(data) {
+		
+		var pswnNewPosition = data.toString().split(',');
+		var lat = parseFloat(pswnNewPosition[0].split('[')[1]);
+		var lon = parseFloat(pswnNewPosition[1].split(']')[0]);
+		var pswnNewPos = {latitude: lat, longitude: lon};
+
+	    if (pswnNotifyCallback != null && Math.max(Math.abs(pswnNewPos.latitude - pswnCurrentPos.latitude), Math.abs(pswnNewPos.longitude - pswnCurrentPos.longitude)) > pswnThreshold) {
+            var data = new Buffer(8);
+            data.writeFloatLE(pswnNewPos.latitude, 0);
+            data.writeFloatLE(pswnNewPos.longitude, 4);
+            pswnNotifyCallback(data);
+        }
+        pswnCurrentPos = pswnNewPos;
+        console.log('POSITION ' + util.inspect(pswnCurrentPos, false, null));
+	});
+	// Write sessionPath and device from this thread to sswnThread.py
+	loadSessionGpsPy.stdin.write(dataSessionPath);
+	loadSessionGpsPy.stdin.write("\n");
+	loadSessionGpsPy.stdin.write(dataDevice);
+	loadSessionGpsPy.stdin.write("\n");
+	loadSessionGpsPy.stdin.end();
+
 } else {
     // Care! Argument of child process is passed between []
     var pswnThread = fork('/home/pi/MOTAM/util/pswnThread.js', [gpsDevicePath]);
