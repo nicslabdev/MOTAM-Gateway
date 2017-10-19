@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "bleno": "^0.4.2",
+    "express": "^4.16.2",
     "node-gpsd": "^0.3.0",
     "serialport": "^5.0.0",
     "unidecode": "^0.1.8"

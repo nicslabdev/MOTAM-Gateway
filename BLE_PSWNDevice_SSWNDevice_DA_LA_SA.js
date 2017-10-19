@@ -11,6 +11,8 @@ var execSync = require('child_process').execSync;
 var bleno = require('bleno');
 var fork = require('child_process').fork;
 var spawn = require('child_process').spawn;
+var express = require('express');
+var app = express();
 
 // boolean var that indicates if GPS has to load a session or not
 var loadSession = false;
@@ -38,6 +40,12 @@ var BlenoPrimaryService = bleno.PrimaryService;
 var BlenoCharacteristic = bleno.Characteristic;
 var BlenoDescriptor = bleno.Descriptor;
 
+// static Server for test Wifi_Direct connection
+app.use(express.static('public'));
+
+app.listen(3000, function () {
+  console.log('Example app listening on port 3000!');
+});
 
 //TODO: Do this dinamically!!!
 // Define the configuration and properties of the gateway. This definition will be properly used by the modules

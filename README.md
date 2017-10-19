@@ -44,3 +44,7 @@ En la carpeta docs:
 In *sessions* folder:
 
 Contains sessions, aka, data from GPS and OBD-II interface captured in previous car trips. Sessions are sqlite databases saved with obdgpslogger utility.
+
+
+In *public* folder:
+Contains files than can be downloaded from smartphone through Wifi_Direct. Only for Wifi_Direct tests.
