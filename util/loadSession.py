@@ -1,7 +1,7 @@
 ###############################################
 # Python Script for load OBDII & GPS sessions #
 # MOTAM Proyect                               #
-# Created by Manuel Montenegro, 06-10-2017    #
+# Created by Manuel Montenegro, 25-10-2017    #
 ###############################################
 
 # This script should be started by nodeJS
@@ -17,9 +17,9 @@ class ServiceExit(Exception):
     pass
 
 def main():
-	# # Register the signal handlers for interrupting the thread
-	# signal.signal(signal.SIGTERM, service_shutdown)
-	# signal.signal(signal.SIGINT, service_shutdown)
+	# Register the signal handlers for interrupting the thread
+	signal.signal(signal.SIGTERM, service_shutdown)
+	signal.signal(signal.SIGINT, service_shutdown)
 
 	# information about sessionPath and device that it has to simulate
 	readedData = read_in()
@@ -112,9 +112,9 @@ def new_value(response):
 	print(response)
 	sys.stdout.flush()
 
-# # this is the interrupt handler. Used when finish the thread (ctrl+c from keyboard)
-# def service_shutdown(signum, frame):
-#     raise ServiceExit
+# this is the interrupt handler. Used when finish the thread (ctrl+c from keyboard)
+def service_shutdown(signum, frame):
+    raise ServiceExit
 
 # start process 
 if __name__ == '__main__':
