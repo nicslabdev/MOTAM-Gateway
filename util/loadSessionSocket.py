@@ -1,7 +1,7 @@
 #################################################################
 # Python Script for load OBD2 sessions & create a server socket #
 # MOTAM Proyect                                                 #
-# Created by Manuel Montenegro, 26-10-2017                      #
+# Created by Manuel Montenegro, 20-11-2017                      #
 #################################################################
 
 import sqlite3
@@ -26,7 +26,7 @@ def main():
 	# path of session database file
 	sessionPath = "/home/pi/MOTAM/sessions/UMA-5_10_17.db"
 	# ip and port assigned to the gateway (Raspberry Pi)
-	gatewayIP = "192.168.1.2"
+	gatewayIP = "192.168.0.1"
 	gatewayPort = 9999
 
 	# create socket for data transmission

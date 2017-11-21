@@ -1,7 +1,7 @@
 ###############################################
 # Python Script for load OBDII & GPS sessions #
 # MOTAM Proyect                               #
-# Created by Manuel Montenegro, 25-10-2017    #
+# Created by Manuel Montenegro, 16-11-2017    #
 ###############################################
 
 # This script should be started by nodeJS
@@ -108,7 +108,6 @@ def read_in():
 
 # this function is called when a new value arrive
 def new_value(response):
-	#sleep the thread because too many responses
 	print(response)
 	sys.stdout.flush()
 
