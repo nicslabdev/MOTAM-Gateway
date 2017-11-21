@@ -1,0 +1,45 @@
+Scanned Sensors
+{"sensors": 
+	[
+		{"sensor": 
+			{
+				"specificData": {"fromDir": 45, "trafficSign": 5, "toDir": 45}, 
+				"lon": -4.495156764984131, 
+				"lat": 36.72113037109375, 
+				"strengh": 1, 
+				"type": 1, 
+				"id": "cb:b6:2b:09:00:36"
+			}
+		}, 
+		{"sensor": 
+			{
+				"specificData": {"bicycleState": 3}, 
+				"lon": -4.493850231170654, 
+				"lat": 36.72249984741211, 
+				"strengh": 3, 
+				"type": 3, 
+				"id": "eb:47:cf:bd:b9:ef"
+			}
+		}, 
+		{"sensor": 
+			{
+				"specificData": {"fromDir": 170, "trafficSign": 16, "toDir": 35}, 
+				"lon": -4.495488166809082, 
+				"lat": 36.72050094604492, 
+				"strengh": 2, 
+				"type": 1, 
+				"id": "d3:3f:fa:f2:ce:52"
+			}
+		}, 
+		{"sensor": 
+			{
+				"specificData": {"roadState": 3}, 
+				"lon": -4.494674205780029, 
+				"lat": 36.72161865234375, 
+				"strengh": 3, 
+				"type": 2, 
+				"id": "d5:23:8a:81:0d:05"
+			}
+		}
+	]
+}
