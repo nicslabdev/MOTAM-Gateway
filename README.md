@@ -11,33 +11,37 @@ Every file related with the gateway (those used for real functionality and those
 
 - *BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js* file. This is the main code. Here is the definition and implementation of the MOTAM devices, i.e: PositionSensorWithNotifications, SpeedSensorWithNotifications, DisplayActuator, LightActuator and SoundActuator. This actuators and sensors work through BLE and serial port. Main code uses "[util](https://nodejs.org/api/util.html)", "[child_process](https://nodejs.org/api/child_process.html)", "[bleno](https://www.npmjs.com/package/bleno)" and [serialport](https://www.npmjs.com/package/serialport) Node.JS modules.
 
-- *package.json* file. Necessary for installation of Node.JS modules.
+- *package.json* file. Necessary for installation of Node.JS modules. Include a list of all necessary Node.JS modules used in MOTAM project.
 
-- Fichero *MOTAM*. Se trata de un acceso directo. Debe estar colocado en el escritorio (/home/pi/Desktop/). Al hacer doble click sobre él, llama al script de bash "Start.sh", que arranca el script principal.
+- *MOTAM* file. This is a desktop shortcut for Debian environments. This should be located in the Desktop (/home/pi/Desktop/). If you double-click on it, this call "Start.sh" script in "util" folder.
 
 
 
 In *util* folder:
 
-- Fichero *pswnThread.js*. Hebra lanzada por BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js para la notificación de los nuevos valores proporcionados por el dispositivo PositionSensor[WithNotifications] al proceso principal. Hace uso del fichero PositionSensorBasedOnGPSD.js y del módulo "[util](https://nodejs.org/api/util.html)" de Node.JS.
+- *pswnThread.js* file. Thread launched by main code ("BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js"). This is used for new values notification from PositionSensor[WithNotifications] device. This use "PositionSensorBasenOnGPSD.js" file and "[util](https://nodejs.org/api/util.html)" Node.JS module.
 
-- Fichero *PositionSensorBasedOnGPSD.js*. Definición e implementación de un sensor de posición basado en las lecturas proporcionadas por el servicio "gpsd" de Linux, al que se ha conectado el GPS receptor [BU-353S4](http://usglobalsat.com/p-688-bu-353-s4.aspx) (PositionSensorBasedOnGPSD). Hace uso del módulo "[node-gpsd](https://www.npmjs.com/package/node-gpsd)" de Node.JS.
+- *PositionSensorBasedOnGPSD.js* file. Definition and implementation of a position sensor based on data from "gpsd" Linux service. A GPS receptor (BU-353S4) is connected to this Linux service. This use "[node-gpsd](https://www.npmjs.com/package/node-gpsd)" Node.js module
 
-- Fichero *sswnThread.py*. Script de Python. Hebra lanzada por BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js para la notificación de los nuevos valores proporcionados por el GPS.
+- *sswnThread.py* file. Python Script. This is a thread launched by main code (BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js) that notify the new values from GPS receiver.
 
-- *loadSession.py*. Python script. This thread can be launch by BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js process. The script charge a previously saved session for simulate a car trip. Sessions contains information about OBD-II interface and GPS, that has been captured in a previous car trip.
+- *loadSession.py* file. Python script. This thread can be launch by BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js process. The script charge a previously saved session for simulate a car trip. Sessions contains information about OBD-II interface and GPS, that has been captured in a previous car trip.
 
-- Fichero *usbDiscovery*. Se trata de un script de bash que devuelve el identificador y las rutas de los dispositivos conectados por USB. Es usado por el código principal.
+- *usbDiscovery* file. Bash script that return the identifier and path of the USB connected devices. This is used by the main code.
 
-- Fichero *zenity*. It's a simple shell script that show a GUI dialog about run OBDII interface simulator and return the answer to the main code. This is used by the main code.
+- *zenity* file. It's a simple shell script that show a GUI dialog about run OBDII interface simulator and return the answer to the main code. This is used by the main code.
 
-- Fichero *Start.sh*. Es un script de bash que simplemente ejecuta el script principal "BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js" con permisos de superusuario.
+- *Start.sh* file. This is a bash script that start the main code "BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js" with super-user permission. This is called by MOTAM desktop shortcut.
 
 
 
-En la carpeta docs:
+In *docs* folder:
 
-- Document *MOTAM Platform - Instalation and deployment guide_es*. This document describes how to install and deploy all components fromt the MOTAM platform.
+- *MOTAM Platform - Instalation and deployment guide_es* document. This document describes how to install and deploy all components fromt the MOTAM platform.
+
+- *JSON example - ble_scan* text file. This is a example of the JSON format used between the gateway and the smartphone for sending data about MOTAM sensors detected.
+
+- *JSON example - loadSessionSocket* text file. This is a example of the JSON format used between the gateway and the smartphone for sending data about a OBDII-GPS session (simulated trip).
 
 
 
@@ -48,3 +52,23 @@ Contains sessions, aka, data from GPS and OBD-II interface captured in previous 
 
 In *public* folder:
 Contains files than can be downloaded from smartphone through Wifi_Direct. Only for Wifi_Direct tests.
+
+
+
+In *wifi_pruebas* folder:
+This is an early implementation of Wifi_Direct funcionality. This will be integrated in the rest of MOTAM code in the future. The static IP assigned to the Gateway is 192.168.0.1.
+
+- *start.sh* file. This is a bash script that creates a Wifi_Direct connection and start a dhcp server.
+
+- *stop.sh* file. This is a bash script that restore wifi configuration to default after creating a Wifi_Direct connection.
+
+- *p2p_supplicant.conf* file. This is a configuration file used for configure Wifi_Direct connection.
+
+- *udhcpd.conf* file. This is a configuration file used for configure DHCP server (neccesary for establish Wifi_Direct connection).
+
+
+
+In *ble_pruebas* folder:
+This is an early implementation of Bluetooth Low Energy scanning funcionality. This will be integrated in the rest of MOTAM code in the future.
+
+- *ble_scan.py* file. Python script that scan MOTAM sensors (using BLE). The script detects beacons from BLE devices and decode those what contains MOTAM identifier. After that, encode the information of every beacon in a JSON. This JSON is sent through Wifi Direct socket. The JSON format can be seen in "docs" folder.
