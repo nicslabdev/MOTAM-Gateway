@@ -43,3 +43,46 @@ Scanned Sensors
 		}
 	]
 }
+
+Keys:
+
+id: identifier of the sensor (currently, MAC address)
+
+type: type of MOTAM beacon:
+	1 -> Traffic Sign
+	2 -> Road State
+	3 -> Bicycle
+
+strengh: received signal power, from 1 (weak signal) to 4 (strong signal)
+
+lat & lon: GPS coordinates
+
+specificData: different format for each beacon type
+	For Traffic Sign:
+		fromDir -> From direction that applies
+		toDir -> To direction that applies
+		trafficSign:
+			0 -> Unknown traffic sign
+			1 -> Green traffic light
+			2 -> Yellow traffic light
+			3 -> Red traffic light
+			4 -> Blink yellow traffic light
+			5 -> Blink red traffic light
+			6 -> Traffic light out
+			15 -> Unknown traffic light state
+			16 -> Stop traffic sign
+	For Road State:
+		roadState:
+			0 -> Unknown road state
+			1 -> Dry
+			2 -> Wet
+			3 -> Ice
+			4 -> Snow
+	For Bicycle:
+		bicycleState:
+			0 -> Unknown
+			1 -> Stopped
+			2 -> Moving
+			3 -> Accident
+
+

@@ -13,7 +13,7 @@ Every file related with the gateway (those used for real functionality and those
 
 - *package.json* file. Necessary for installation of Node.JS modules. Include a list of all necessary Node.JS modules used in MOTAM project.
 
-- *MOTAM* file. This is a desktop shortcut for Debian environments. This should be located in the Desktop (/home/pi/Desktop/). If you double-click on it, this call "Start.sh" script in "util" folder.
+- *MOTAM* file. This is a desktop shortcut for Debian environments. This should be located in the Desktop (/home/pi/Desktop/). If you double-click on it, this call "StartGateway.sh" script in "util" folder.
 
 
 
@@ -25,13 +25,16 @@ In *util* folder:
 
 - *sswnThread.py* file. Python Script. This is a thread launched by main code (BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js) that notify the new values from GPS receiver.
 
-- *loadSession.py* file. Python script. This thread can be launch by BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js process. The script charge a previously saved session for simulate a car trip. Sessions contains information about OBD-II interface and GPS, that has been captured in a previous car trip.
+- *loadSession.py* file. Old python script. This is not in use now. This thread can be launch by BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js process. The script charge a previously saved session for simulate a car trip. Sessions contains information about OBD-II interface and GPS, that has been captured in a previous car trip.
+
+- *loadSessionSocket.py* file. Python Script. This charge a previously saved session for simulate a car trip and send the information in "real time" through a socket (ideally, through Wifi Direct). Sessions contains information about OBD-II interface and GPS, that has been captured in a previous car trip.
+
 
 - *usbDiscovery* file. Bash script that return the identifier and path of the USB connected devices. This is used by the main code.
 
 - *zenity* file. It's a simple shell script that show a GUI dialog about run OBDII interface simulator and return the answer to the main code. This is used by the main code.
 
-- *Start.sh* file. This is a bash script that start the main code "BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js" with super-user permission. This is called by MOTAM desktop shortcut.
+- *StartGateway.sh* file. This is a bash script that start the main code "BLE_PSWNDevice_SSWNDevice_DA_LA_SA.js" with super-user permission. This is called by MOTAM desktop shortcut.
 
 
 
