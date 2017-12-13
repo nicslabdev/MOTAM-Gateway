@@ -1,6 +1,6 @@
 #!/bin/bash
 # Bash script for recognise USB connected devices
-# Developed for MOTAM Proyect
+# Developed for MOTAM Project
 # By Manuel Montenegro. 18/09/2017
 
 for sysdevpath in $(find /sys/bus/usb/devices/usb*/ -name dev); do
