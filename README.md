@@ -1,6 +1,6 @@
 # **MOTAM - Gateway** #
 
-In this repository you can find all the gateway elements and its development. The gateway is supported by Raspberry Pi 3 Model B platform.
+In this repository you can find all gateway elements and its development. The gateway is supported by Raspberry Pi 3 Model B platform.
 
 
 # Description of every developed file #
@@ -52,10 +52,21 @@ In *sessions* folder:
 
 Contains sessions, aka, data from GPS and OBD-II interface captured in previous car trips. Sessions are sqlite databases saved with obdgpslogger utility.
 
+Currently, there are two sessions logged:
+
+
 
 In *public* folder:
 Contains files than can be downloaded from smartphone through Wifi_Direct. Only for Wifi_Direct tests.
 
+- *UMA-5_10_17.db:* this is a log of a trip with a duration of 5'49''. No sensors in this session.
+
+- *UMA-5_10_17-Short-WithSensors.db:* this is a short version of "UMA-5_10_17.db" with sensors. This sensors have beed added manually in the database. So this isn't real sensors, but its behaviour is like real sensors. This log has a duration of 2'35''. The sensors appears in the following times:
+
+	From 0'' to 11'': Bicycle moving sensor and green traffic light.
+	From 19'' to 30'': Stop sign
+	From 1'05'' to 1'25'': yellow traffic light
+	From 1'45'' to 1'56'': snow in road
 
 
 In *wifi_pruebas* folder:

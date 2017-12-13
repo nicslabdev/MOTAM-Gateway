@@ -1,7 +1,9 @@
+#! /usr/bin/python
+
 #################################################################
 # Python Script for load OBD2 sessions & create a server socket #
-# MOTAM Proyect                                                 #
-# Created by Manuel Montenegro, 20-11-2017                      #
+# MOTAM Project                                                 #
+# Created by Manuel Montenegro, 13-12-2017                      #
 #################################################################
 
 import sqlite3
@@ -14,7 +16,7 @@ import json
 
 
 class ServiceExit(Exception):
-	# necessary for interrupt exception
+	# this is necessary for interrupt exception
     pass
 
 def main():
@@ -24,7 +26,7 @@ def main():
 	signal.signal(signal.SIGINT, service_shutdown)
 
 	# path of session database file
-	sessionPath = "/home/pi/MOTAM/sessions/UMA-5_10_17.db"
+	sessionPath = "/home/pi/MOTAM/sessions/UMA-5_10_17-Short-WithSensors.db"
 	# ip and port assigned to the gateway (Raspberry Pi)
 	gatewayIP = "192.168.0.1"
 	gatewayPort = 9999
@@ -50,15 +52,16 @@ def main():
 		tripCurs = db.cursor()
 		gpsCurs = db.cursor()
 		obdCurs = db.cursor()
+		sensorsCurs = db.cursor()
 
-
+		# everytime that engine stop and start during session saving, new trip is created
 		for trip in tripCurs.execute("SELECT * FROM trip"):
-			start=trip[1]
+			start = trip[1]
 			end = trip[2]
 
 			nextTime = None
 
-			for gpsRow in gpsCurs.execute("SELECT * FROM gps WHERE time>(?) AND time<(?)",(start,end)):
+			for gpsRow in gpsCurs.execute("SELECT * FROM gps WHERE time>=(?) AND time<(?)",(start,end)):
 				# if this is not the first iteration...
 				if (nextTime != None):
 					currentTime = nextTime
@@ -67,11 +70,11 @@ def main():
 					# time difference between two samples
 					diff = nextTime - currentTime
 
-					# take the same sample from obd
+					# take the same sample from obd table
 					obdCurs.execute("SELECT * FROM obd WHERE time=(?)",(currentTime,))
 					obdRow = obdCurs.fetchone()
 
-					# obtained information from sessions database
+					# obtained information about OBDII & GPS from sessions database
 					temp = obdRow[0]
 					rpm = obdRow[1]
 					vss = obdRow[2]
@@ -84,14 +87,26 @@ def main():
 					course = gpsRow[4]
 					gpsTime = gpsRow[5]
 
-					# python list with all obtained data from database
-					sData = [temp,rpm,vss,maf,throttlepos,lat,lon,alt,speed,course,gpsTime]
+					# python list with obd&gps data obtained from database
+					obdGpsData = [temp,rpm,vss,maf,throttlepos,lat,lon,alt,speed,course,gpsTime]
+
+					# take information about sensors if it are visible in current time
+					sensorsCurs.execute("SELECT * FROM sensors WHERE startTime<=(?) AND endTime>(?)", (currentTime,currentTime))
+					sensorsRow = sensorsCurs.fetchone()
+
 
 					# send the data through the socket
-					jsonSend (sData, sockConnection)
+					obdGpsSend (obdGpsData, sockConnection)
+
+					# if there are detected sensors...
+					if sensorsRow:
+						sensorsJson = sensorsRow[2]
+						sensorsSend (sensorsJson, sockConnection)
+					else:
+						sensorsJson = None
 
 					# sleep the thread: simulating gps signal delay
-					time.sleep(diff)					
+					time.sleep(diff)
 
 				# if this is the first row, go to second iteration
 				else:				
@@ -107,16 +122,22 @@ def main():
 		print("Connection Closed")
 		
 	finally:
-		# close the database
 		db.close()
-		# close the socket connection
 		sockConnection.close()
 
-# encode data to json and send it by socket
-def jsonSend(sData, sockConnection):
+# encode data OBDII & GPS data to json and send it by socket
+def obdGpsSend(sData, sockConnection):
 	data = {"session": [ {"obd": [ {"temp":sData[0]}, {"rpm":sData[1]}, {"vss":sData[2]}, {"maf":sData[3]}, {"throttlepos":sData[4]} ] }, {"gps": [	{"lat":sData[5]}, {"lon":sData[6]}, {"alt":sData[7]}, {"speed":sData[8]}, {"course":sData[9]}, {"gpsTime":sData[10]} ] } ] }
 	jsonData = json.dumps(data)
 	sockConnection.sendall (jsonData)
+
+# send by socket sensors json received
+def sensorsSend (sData, sockConnection):
+	# decode and encode again in order to sensors info has the same format than OBD&GPS info
+	jsonSensors = json.loads(sData)
+	jsonData = json.dumps(jsonSensors)
+	sockConnection.sendall (jsonData)
+
 
 # this is the interrupt handler. Used when the thread is finished (ctrl+c from keyboard)
 def service_shutdown(signum, frame):
