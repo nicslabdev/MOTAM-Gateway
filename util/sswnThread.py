@@ -1,6 +1,8 @@
+#! /usr/bin/python
+
 ###############################################
 # Python Script for use OBDII Scanner ELM327  #
-# MOTAM Proyect                               #
+# MOTAM Project                               #
 # Created by Manuel Montenegro, 04-10-2017    #
 ###############################################
 

@@ -1,6 +1,8 @@
+#! /usr/bin/python
+
 ###############################################
 # Python Script for load OBDII & GPS sessions #
-# MOTAM Proyect                               #
+# MOTAM Project                               #
 # Created by Manuel Montenegro, 16-11-2017    #
 ###############################################
 

@@ -2,7 +2,7 @@
 
 # Bash script for stop and return to default Wifi connection
 # after starting a wifi direct connection
-# Developed for MOTAM Proyect
+# Developed for MOTAM Project
 # By Manuel Montenegro. 02/11/2017
 
 

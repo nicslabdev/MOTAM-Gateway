@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin python
 
 ################################################
 # Python Script for scanning MOTAM BLE Devices #
-# MOTAM Proyect                                #
+# MOTAM Project                                #
 # Created by Manuel Montenegro, 22-11-2017.    #
 ################################################
 

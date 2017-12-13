@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Bash script for start Wifi Direct connection
-# Developed for MOTAM Proyect
+# Developed for MOTAM Project
 # By Manuel Montenegro. 02/11/2017
 
 wpa_cli -i wlan0 terminate -B
