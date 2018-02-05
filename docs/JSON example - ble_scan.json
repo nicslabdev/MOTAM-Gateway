@@ -40,9 +40,20 @@ Scanned Sensors
 				"type": 2, 
 				"id": "d5:23:8a:81:0d:05"
 			}
+		},
+		{"sensor": 
+			{
+				"specificData": {"seatState": 1}, 
+				"lon": 0, 
+				"lat": 0, 
+				"strengh": 4, 
+				"type": 4, 
+				"id": "d5:23:8a:81:0d:05"
+			}
 		}
 	]
 }
+
 
 Keys:
 
@@ -52,6 +63,7 @@ type: type of MOTAM beacon:
 	1 -> Traffic Sign
 	2 -> Road State
 	3 -> Bicycle
+	4 -> Baby Car Seat
 
 strengh: received signal power, from 1 (weak signal) to 4 (strong signal)
 
@@ -84,5 +96,9 @@ specificData: different format for each beacon type
 			1 -> Stopped
 			2 -> Moving
 			3 -> Accident
+	For Baby Car Seat:
+		seatState:
+			0 -> Insecure
+			1 -> Secure
 
 
