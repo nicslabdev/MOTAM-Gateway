@@ -4,6 +4,9 @@
 # Developed for MOTAM Project
 # By Manuel Montenegro. 02/11/2017
 
+# dhcpcd5 interferes with p2p wpa_supplicant from version 6.11.5
+systemctl disable dhcpcd.service
+
 wpa_cli -i wlan0 terminate -B
 # its necessary a time for finishing the last command
 sleep 0.3
