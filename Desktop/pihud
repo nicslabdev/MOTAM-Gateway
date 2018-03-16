@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=pihud
+Comment=Start pihud
+Exec=python -m pihud
+Terminal=true
+Type=Application
