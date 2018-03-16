@@ -1,0 +1,18 @@
+Metadata-Version: 1.1
+Name: pihud
+Version: 0.1.0
+Summary: Configurable heads up display for the Raspberry Pi using a car's OBD port
+Home-page: http://github.com/brendan-w/piHud
+Author: Brendan Whitfield
+Author-email: me@brendan-w.com
+License: GNU LGPLv2.1
+Description: UNKNOWN
+Keywords: obd car heads-up display Hud vehicle diagnostic
+Platform: UNKNOWN
+Classifier: Operating System :: POSIX :: Linux
+Classifier: License :: OSI Approved :: GNU Lesser General Public License v2 (LGPLv2)
+Classifier: Topic :: System :: Monitoring
+Classifier: Programming Language :: Python :: 2 :: Only
+Classifier: Development Status :: 3 - Alpha
+Classifier: Topic :: System :: Logging
+Classifier: Intended Audience :: Developers
