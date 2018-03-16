@@ -22,7 +22,8 @@ roadStateBeacon = '\x02'
 bicycleBeacon = '\x03'
 
 # ip and port assigned to the gateway (Raspberry Pi)
-gatewayIP = "192.168.0.1"
+gatewayIP = "192.168.48.213"
+# gatewayIP = "192.168.0.1"
 gatewayPort = 9999
 
 # Simulated coordenates of the device
@@ -228,6 +229,7 @@ def main ():
 						if (advId == motamBeaconId):
 							# decodedDataSensor has all info about 1 MOTAM sensor
 							decodedDataSensor =  processMotamAdvPacket(dev.addr, dev.rssi, val)
+							print val
 
 							# apply a filter about distance and course of the device
 							if (navegationFilter (decodedDataSensor)):

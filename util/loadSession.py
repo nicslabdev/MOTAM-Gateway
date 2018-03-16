@@ -13,6 +13,7 @@ import sys, json, numpy as np
 import threading
 import socket
 import json
+import os
 
 
 class ServiceExit(Exception):
@@ -28,6 +29,7 @@ def main():
 	# path of session database file
 	sessionPath = "/home/pi/MOTAM/sessions/UMA-5_10_17-Short-WithSensors-v2.db"
 	# ip and port assigned to the gateway (Raspberry Pi)
+	# gatewayIP = "192.168.48.213"
 	gatewayIP = "192.168.0.1"
 	gatewayPort = 9999
 
