@@ -36,22 +36,24 @@ def main():
 	gatewayIP = "192.168.0.1"
 	gatewayPort = 9999
 
-	# create socket for data transmission
-	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	# prevent "Address already in use" error
-	sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-	# asociate the socket with server address
-	sock.bind((gatewayIP, gatewayPort))
-	# put the socket in server mode and only accept 1 connection
-	sock.listen(1)
-
-	print('\r\nWaiting connection...')
-	# this block the thread until a connection arrives
-	sockConnection, clientAddress = sock.accept()
-
+	db = None
+	sockConnection = None
 
 	# executes this while it doesn't receive a terminal signal
 	try:
+		# create socket for data transmission
+		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		# prevent "Address already in use" error
+		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		# asociate the socket with server address
+		sock.bind((gatewayIP, gatewayPort))
+		# put the socket in server mode and only accept 1 connection
+		sock.listen(1)
+
+		print('\r\nWaiting connection...')
+		# this block the thread until a connection arrives
+		sockConnection, clientAddress = sock.accept()
+
 		# connection to database
 		db=sqlite3.connect(sessionPath)
 		tripCurs = db.cursor()
@@ -129,8 +131,10 @@ def main():
 		print("Connection Closed")
 		
 	finally:
-		db.close()
-		sockConnection.close()
+		if (db != None):
+			db.close()
+		if (sockConnection != None):
+			sockConnection.close()
 		procStop = subprocess.Popen(['sudo','/home/pi/MOTAM/wifi_pruebas/stop.sh'])
 		procStop.wait()
 
