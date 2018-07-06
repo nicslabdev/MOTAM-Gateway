@@ -23,3 +23,8 @@ The simulation has a duration of 155 seconds, but it's reproduced in loop.
 Only execute in Raspberry Pi terminal:
 
     python /home/pi/MOTAM/simulation/startSimulation.py
+
+## Connection parameters:
+
+ - Gateway IP direction: 192.168.0.1
+ - Gateway Port: 9999
