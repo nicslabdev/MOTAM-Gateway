@@ -4,6 +4,8 @@ Here you can find a preloaded simulation of a car trip. The information is sent 
 
 This Python script starts the Wifi Direct connection, so it isn't necessary to run manually *wifi_pruebas/start.sh* bash script.
 
+The simulation has a duration of 155 seconds, but it's reproduced in loop.
+
 ## Simulated beacons deployed
 
 | Time (seconds) | Beacon data |
