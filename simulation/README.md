@@ -1,10 +1,9 @@
-# Gateway simulation #
+
+# Gateway simulation
 
 Here you can find a preloaded simulation of a car trip. The information is sent by a Wifi Direct socket in JSON format.
 
-This Python script starts the Wifi Direct connection, so it isn't necessary to run manually *wifi_pruebas/start.sh* bash script.
-
-The simulation has a duration of 155 seconds, but it's reproduced in loop.
+Although the simulation has a duration of 155 seconds, it's reproduced in loop. So script doesn't stop.
 
 ## Simulated beacons deployed
 
@@ -22,9 +21,17 @@ The simulation has a duration of 155 seconds, but it's reproduced in loop.
 
 Only execute in Raspberry Pi terminal:
 
-    python /home/pi/MOTAM/simulation/startSimulation.py
+    python3 /home/pi/MOTAM/simulation/startSimulation.py
 
 ## Connection parameters:
 
  - Gateway IP direction: 192.168.0.1
- - Gateway Port: 9999
+ - Gateway Port: 4443
+
+## Changelog
+
+### Version 1.1
+ - Code migrated to Python 3.
+ - Added Transport Layer Security (TLS) to connection between gateway and smartphone.
+### Version 1.0
+First version of simulation script.

@@ -1,16 +1,16 @@
 #! /usr/bin/python
 
-###################################################
-# Python Script that simulates OBDII and sensors  #
-# MOTAM Project                                   #
-# Created by Manuel Montenegro, Jul 06, 2018      #
-###################################################
+######################################################
+# Python Script that simulates OBDII and sensors     #
+# MOTAM Project                                      #
+# Created by Manuel Montenegro, Jul 10, 2018. V. 1.1 #
+######################################################
 
 import sqlite3
 import signal
 import time
-import sys, json, numpy as np
 import socket
+import ssl
 import json
 import os
 import subprocess
@@ -26,18 +26,35 @@ def main():
 	signal.signal(signal.SIGTERM, service_shutdown)
 	signal.signal(signal.SIGINT, service_shutdown)
 
-	procStart = subprocess.Popen(['sudo','/home/pi/MOTAM/wifi_pruebas/start.sh'])
-	procStart.wait()
-
 	# path of session database file
 	sessionPath = "/home/pi/MOTAM/simulation/UMA-5_10_17-Simulation.db"
 	# ip and port assigned to the gateway (Raspberry Pi)
 	# gatewayIP = "192.168.48.213"
 	gatewayIP = "192.168.0.1"
-	gatewayPort = 9999
+	gatewayPort = 4443
 
 	db = None
 	sockConnection = None
+	sockTlsConnection = None
+
+	# TLS configuration for connection
+	try:
+		# create the SSL context
+		context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+		# server certificate and private key (and its key)
+		context.load_cert_chain(certfile="/home/pi/MOTAM/Certificates/192.168.0.1.crt", keyfile="/home/pi/MOTAM/Certificates/192.168.0.1.key", password = '123456')
+		# Certificate Authority
+		context.load_verify_locations('/home/pi/MOTAM/Certificates/CA.crt')
+		# certificates are required from the other side of the socket connection
+		context.verify_mode = ssl.CERT_REQUIRED
+
+	except ssl.SSLError:
+		print('Private key doesn’t match with the certificate')
+		exit()
+
+	procStart = subprocess.Popen(['sudo','/home/pi/MOTAM/wifi_pruebas/start.sh'])
+	procStart.wait()
+	print()
 
 	# executes this while it doesn't receive a terminal signal
 	try:
@@ -50,9 +67,10 @@ def main():
 		# put the socket in server mode and only accept 1 connection
 		sock.listen(1)
 
-		print('\r\nWaiting connection...')
+		print('Waiting connection...')
 		# this block the thread until a connection arrives
 		sockConnection, clientAddress = sock.accept()
+		sockTlsConnection = context.wrap_socket(sockConnection, server_side=True)
 
 		# connection to database
 		db=sqlite3.connect(sessionPath)
@@ -84,12 +102,13 @@ def main():
 						# time difference between two samples
 						diff = nextTime - currentTime
 
+						# sleep the thread: simulating gps signal delay
+						time.sleep(diff)
+
 						# take the same sample from obd table
 						obdCurs.execute("SELECT * FROM obd WHERE time=(?)",(currentTime,))
 						obdRow = obdCurs.fetchone()
 
-						# sleep the thread: simulating gps signal delay
-						time.sleep(diff)
 
 						# obtained information about OBDII & GPS from sessions database
 						vss = int(obdRow[2])
@@ -101,7 +120,7 @@ def main():
 						# structure for generating JSON
 						data = {"carInfo": {"engineOn":True, "vss":vss, "lat":lat, "lon":lon, "gpsTime":gpsTime, "course":course}, "sensors": []}
 
-						# conditions for triggering a new simulated beacon
+						# conditions for triggering a new simulated beacon: beacons_dataRow will be None when no more rows lefts
 						if ( (beacons_dataRow != None) and (currentTime >= beacons_dataRow[0])):
 							
 							# load JSON data from beacons_data database table
@@ -116,7 +135,7 @@ def main():
 						jsonData = json.dumps(data)
 						
 						# send the json by socket
-						sockConnection.sendall (jsonData)						
+						sockTlsConnection.sendall (jsonData.encode())						
 
 					else:				
 						nextTime = gpsRow[6]
@@ -133,8 +152,13 @@ def main():
 	finally:
 		if (db != None):
 			db.close()
+		if(sockTlsConnection != None):
+			sockTlsConnection.close()
 		if (sockConnection != None):
 			sockConnection.close()
+		if (sock != None):
+			sock.close()
+		
 		procStop = subprocess.Popen(['sudo','/home/pi/MOTAM/wifi_pruebas/stop.sh'])
 		procStop.wait()
 
