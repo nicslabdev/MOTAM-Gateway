@@ -1,0 +1,69 @@
+Certificate:
+    Data:
+        Version: 1 (0x0)
+        Serial Number: 10059386636745573574 (0x8b9a1ed9658804c6)
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=ES, ST=Malaga, O=UMA, OU=NICS Lab, CN=CA de MOTAM
+        Validity
+            Not Before: Jul  9 10:56:18 2018 GMT
+            Not After : Jul  9 10:56:18 2019 GMT
+        Subject: C=ES, ST=Tenerife, L=La Laguna, O=ULL, OU=CryptULL, CN=App2
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:c5:96:de:e8:25:1c:ef:f8:d0:c3:cf:f1:a0:d4:
+                    ed:41:0b:6f:aa:ec:9b:9d:6b:95:67:74:8a:81:6b:
+                    81:4d:90:32:b3:de:72:27:00:b5:85:91:be:df:6a:
+                    4f:c2:45:12:6e:bb:32:5b:68:d9:65:01:36:c5:f6:
+                    41:72:a5:e4:5d:6d:f1:2f:f7:e1:de:82:48:a6:51:
+                    6c:18:e0:8f:6c:71:09:c7:f1:32:b6:44:f7:50:c6:
+                    37:4c:a9:ca:9c:d2:97:ec:0a:e1:60:71:87:ae:b9:
+                    f2:1b:60:94:31:57:be:e4:d6:86:c5:71:17:38:c3:
+                    41:ad:f0:3f:df:da:3a:25:1e:6c:1b:60:e5:0d:92:
+                    27:1d:c9:7b:6e:56:f5:8c:5a:d5:cb:3c:25:8c:68:
+                    81:9c:31:80:20:b4:b2:eb:d1:14:95:5b:06:21:a5:
+                    b0:6e:ac:b0:14:03:65:68:a8:a6:ab:56:2e:b6:87:
+                    ce:c4:8f:29:b0:34:73:19:8d:6e:2d:60:44:05:1d:
+                    f3:ff:b3:96:10:8c:df:03:61:0b:08:7e:97:67:0a:
+                    7e:d8:4c:11:7c:42:04:c9:e9:1b:31:3c:fb:fc:cf:
+                    fb:27:86:9d:c9:60:97:1b:6f:9d:37:ea:60:2e:0d:
+                    5b:ee:77:69:73:e0:8d:63:fb:90:61:dd:a6:91:e0:
+                    76:fb
+                Exponent: 65537 (0x10001)
+    Signature Algorithm: sha256WithRSAEncryption
+         44:50:d7:6f:9a:14:1d:d2:2f:98:eb:05:ab:55:99:84:af:f7:
+         aa:80:86:cd:e9:49:2d:fe:2f:26:a8:e3:8f:e2:8c:11:14:41:
+         cc:f0:1c:03:cd:51:67:69:32:b6:e6:fc:3d:be:1f:f5:8b:b3:
+         f9:c9:68:b6:31:58:b6:53:4d:2e:c0:c7:d6:3c:ff:7d:57:98:
+         9d:0d:92:21:43:83:da:4e:45:a9:91:1d:5a:81:30:1b:5f:d8:
+         56:07:71:08:ac:20:eb:fe:ea:8c:ed:92:fe:c7:f3:f1:72:62:
+         93:69:df:82:bd:dc:0a:32:04:99:ca:40:6d:f6:28:56:68:1d:
+         65:d3:19:8b:31:d1:72:d0:39:fd:f1:b5:d0:24:a9:4b:b0:e5:
+         aa:d7:9b:67:bc:0b:d2:1e:e9:e7:03:4d:6d:a9:a9:54:ba:68:
+         90:83:23:10:35:c8:6e:6d:2e:9f:ac:90:e4:80:19:be:24:16:
+         b3:74:75:ae:6f:d0:83:44:8d:74:ac:d4:b5:d2:a3:4a:67:7f:
+         39:c0:82:0d:6c:cb:83:6d:1f:af:c2:ce:0e:a7:fc:c8:f2:61:
+         1d:7c:56:2c:e5:00:24:6a:80:c5:c6:56:61:32:86:40:1b:28:
+         0b:99:00:9a:f3:57:0e:e9:21:33:5c:55:ed:16:47:27:c6:6d:
+         88:ad:bb:77
+-----BEGIN CERTIFICATE-----
+MIIDNTCCAh0CCQCLmh7ZZYgExjANBgkqhkiG9w0BAQsFADBVMQswCQYDVQQGEwJF
+UzEPMA0GA1UECBMGTWFsYWdhMQwwCgYDVQQKEwNVTUExETAPBgNVBAsTCE5JQ1Mg
+TGFiMRQwEgYDVQQDEwtDQSBkZSBNT1RBTTAeFw0xODA3MDkxMDU2MThaFw0xOTA3
+MDkxMDU2MThaMGQxCzAJBgNVBAYTAkVTMREwDwYDVQQIEwhUZW5lcmlmZTESMBAG
+A1UEBxMJTGEgTGFndW5hMQwwCgYDVQQKEwNVTEwxETAPBgNVBAsTCENyeXB0VUxM
+MQ0wCwYDVQQDEwRBcHAyMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
+xZbe6CUc7/jQw8/xoNTtQQtvquybnWuVZ3SKgWuBTZAys95yJwC1hZG+32pPwkUS
+brsyW2jZZQE2xfZBcqXkXW3xL/fh3oJIplFsGOCPbHEJx/EytkT3UMY3TKnKnNKX
+7ArhYHGHrrnyG2CUMVe+5NaGxXEXOMNBrfA/39o6JR5sG2DlDZInHcl7blb1jFrV
+yzwljGiBnDGAILSy69EUlVsGIaWwbqywFANlaKimq1YutofOxI8psDRzGY1uLWBE
+BR3z/7OWEIzfA2ELCH6XZwp+2EwRfEIEyekbMTz7/M/7J4adyWCXG2+dN+pgLg1b
+7ndpc+CNY/uQYd2mkeB2+wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBEUNdvmhQd
+0i+Y6wWrVZmEr/eqgIbN6Ukt/i8mqOOP4owRFEHM8BwDzVFnaTK25vw9vh/1i7P5
+yWi2MVi2U00uwMfWPP99V5idDZIhQ4PaTkWpkR1agTAbX9hWB3EIrCDr/uqM7ZL+
+x/PxcmKTad+CvdwKMgSZykBt9ihWaB1l0xmLMdFy0Dn98bXQJKlLsOWq15tnvAvS
+HunnA01tqalUumiQgyMQNchubS6frJDkgBm+JBazdHWub9CDRI10rNS10qNKZ385
+wIINbMuDbR+vws4Op/zI8mEdfFYs5QAkaoDFxlZhMoZAGygLmQCa81cO6SEzXFXt
+Fkcnxm2Irbt3
+-----END CERTIFICATE-----
