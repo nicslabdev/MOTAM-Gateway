@@ -1,7 +1,7 @@
 
 # Gateway simulation
 
-Here you can find a preloaded simulation of a car trip. The information is sent by a Wifi Direct socket in JSON format.
+Here you can find a preloaded simulation of a car trip. The information is sent via Wifi Direct socket in JSON format.
 
 Although the simulation has a duration of 155 seconds, it's reproduced in loop. So script doesn't stop.
 
@@ -19,17 +19,19 @@ Although the simulation has a duration of 155 seconds, it's reproduced in loop. 
 
 ## Usage
 
-Only execute in Raspberry Pi terminal:
+Just execute in Raspberry Pi terminal:
 
     python3 /home/pi/MOTAM/simulation/startSimulation.py
 
 ## Connection parameters:
 
  - Gateway IP direction: 192.168.0.1
- - Gateway Port: 4443
+ - Gateway TLS port: 4443
+ - Gateway no secure port: 9999
 
 ## Changelog
-
+### Version 1.2
+ - Added two connection options. It is possible to receive simulation data by TLS connection through TLS port or by an unsecure connection through unsafe port.
 ### Version 1.1
  - Code migrated to Python 3.
  - Added Transport Layer Security (TLS) to connection between gateway and smartphone.

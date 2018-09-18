@@ -3,13 +3,14 @@
 ######################################################
 # Python Script that simulates OBDII and sensors     #
 # MOTAM Project                                      #
-# Created by Manuel Montenegro, Jul 10, 2018. V. 1.1 #
+# Created by Manuel Montenegro, Sep 18, 2018. V. 1.2 #
 ######################################################
 
 import sqlite3
 import signal
 import time
 import socket
+import select
 import ssl
 import json
 import os
@@ -29,24 +30,26 @@ def main():
 	# path of session database file
 	sessionPath = "/home/pi/MOTAM/simulation/UMA-5_10_17-Simulation.db"
 	# ip and port assigned to the gateway (Raspberry Pi)
-	# gatewayIP = "192.168.48.213"
 	gatewayIP = "192.168.0.1"
-	gatewayPort = 4443
+	# gateway secure port
+	gatewaySPort = 4443
+	# gateway no secure port: connection without TLS
+	gatewayPort = 9999
 
 	db = None
+	sSockConnection = None
 	sockConnection = None
-	sockTlsConnection = None
 
 	# TLS configuration for connection
 	try:
 		# create the SSL context
-		context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+		SSLcontext = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 		# server certificate and private key (and its key)
-		context.load_cert_chain(certfile="/home/pi/MOTAM/Certificates/192.168.0.1.crt", keyfile="/home/pi/MOTAM/Certificates/192.168.0.1.key", password = '123456')
+		SSLcontext.load_cert_chain(certfile="/home/pi/MOTAM/Certificates/192.168.0.1.crt", keyfile="/home/pi/MOTAM/Certificates/192.168.0.1.key", password = '123456')
 		# Certificate Authority
-		context.load_verify_locations('/home/pi/MOTAM/Certificates/CA.crt')
+		SSLcontext.load_verify_locations('/home/pi/MOTAM/Certificates/CA.crt')
 		# certificates are required from the other side of the socket connection
-		context.verify_mode = ssl.CERT_REQUIRED
+		SSLcontext.verify_mode = ssl.CERT_REQUIRED
 
 	except ssl.SSLError:
 		print('Private key doesn’t match with the certificate')
@@ -58,19 +61,35 @@ def main():
 
 	# executes this while it doesn't receive a terminal signal
 	try:
-		# create socket for data transmission
+		# create secure socket and no TLS socket for data transmission
+		sSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		# prevent "Address already in use" error
+		sSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		# asociate the socket with server address
+		# asociate the secure socket with server address an port
+		sSock.bind((gatewayIP, gatewaySPort))
 		sock.bind((gatewayIP, gatewayPort))
-		# put the socket in server mode and only accept 1 connection
+		# put the secure socket in server mode and only accept 1 connection
+		sSock.listen(1)
 		sock.listen(1)
+		# list of sockets: secure and no secure
+		socketList = [sSock, sock]
 
 		print('Waiting connection...')
 		# this block the thread until a connection arrives
-		sockConnection, clientAddress = sock.accept()
-		sockTlsConnection = context.wrap_socket(sockConnection, server_side=True)
+		# readSocketList is a list of sockets ready for reading from the gateway
+		readSocketList, writeList, exceptionList = select.select(socketList, [], [])
+
+		# if there are more than 1 socket in list, this will only accept the first one
+		# if the connection is not secure
+		if readSocketList[0] is sock:
+			sockConnection, clientAddress = readSocketList[0].accept()
+		# if the connection is secure 
+		elif readSocketList[0] is sSock:
+			sSockConnection, clientAddress = readSocketList[0].accept()
+			# sock connection is a TLS wrapping of sSockConnection
+			sockConnection = SSLcontext.wrap_socket(sSockConnection, server_side=True)
 
 		# connection to database
 		db=sqlite3.connect(sessionPath)
@@ -135,7 +154,7 @@ def main():
 						jsonData = json.dumps(data)
 						
 						# send the json by socket
-						sockTlsConnection.sendall (jsonData.encode())						
+						sockConnection.sendall (jsonData.encode())						
 
 					else:				
 						nextTime = gpsRow[6]
@@ -152,10 +171,12 @@ def main():
 	finally:
 		if (db != None):
 			db.close()
-		if(sockTlsConnection != None):
-			sockTlsConnection.close()
-		if (sockConnection != None):
+		if(sockConnection != None):
 			sockConnection.close()
+		if (sSockConnection != None):
+			sSockConnection.close()
+		if (sSock != None):
+			sSock.close()
 		if (sock != None):
 			sock.close()
 		
