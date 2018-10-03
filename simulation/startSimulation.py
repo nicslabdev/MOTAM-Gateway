@@ -90,6 +90,7 @@ def main():
 			sSockConnection, clientAddress = readSocketList[0].accept()
 			# sock connection is a TLS wrapping of sSockConnection
 			sockConnection = SSLcontext.wrap_socket(sSockConnection, server_side=True)
+			print("SSL established. Peer: {}".format(sockConnection.getpeercert()))
 
 		# connection to database
 		db=sqlite3.connect(sessionPath)
