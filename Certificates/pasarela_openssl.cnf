@@ -1,0 +1,56 @@
+#
+# OpenSSL example configuration file.
+# This is mostly being used for generation of certificate requests.
+#
+
+
+####################################################################
+[ req ]
+default_bits		= 2048
+default_keyfile 	= privkey.pem
+distinguished_name	= req_distinguished_name
+#attributes		= req_attributes
+
+# This sets a mask for permitted string types. There are several options. 
+# default: PrintableString, T61String, BMPString.
+# pkix	 : PrintableString, BMPString.
+# utf8only: only UTF8Strings.
+# nombstr : PrintableString, T61String (no BMPStrings or UTF8Strings).
+# MASK:XXXX a literal mask value.
+# WARNING: current versions of Netscape crash on BMPStrings or UTF8Strings
+# so use this option with caution!
+string_mask = default
+ 
+req_extensions = v3_req # The extensions to add to a certificate request
+
+[ req_distinguished_name ]
+countryName			= País de registro del vehículo (código de 2 letras)
+countryName_default		= ES
+countryName_min			= 2
+countryName_max			= 2
+
+stateOrProvinceName		= Provincia de registro del vehículo
+stateOrProvinceName_default	= Málaga
+
+localityName			= Localidad de registro del vehículo
+localityName_default	= Málaga
+
+organizationName		= Organización
+organizationName_default	= MOTAM
+
+organizationalUnitName		= Tipo de vehículo (normal o emergencia)
+organizationalUnitName_default	= normal
+
+commonName			= Matrícula (0000AAA)
+commonName_max			= 64
+
+emailAddress			= Correo del propietario
+emailAddress_max		= 64
+
+[ v3_req ]
+
+# Extensions to add to a certificate request
+
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName = IP:192.168.0.1

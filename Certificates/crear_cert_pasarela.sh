@@ -1,0 +1,7 @@
+#!/bin/bash
+openssl req -out pasarela.csr -newkey rsa:2048 -nodes -utf8 -keyout pasarela.key -config pasarela_openssl.cnf
+echo "Sending CSR to on-line CA ..."
+serial=`curl -s -X POST -F 'csr=@pasarela.csr' http://lti.adabyron.uma.es/upload_csr/`
+echo "Downloading certificate as $serial.crt, key saved as $serial.key"
+mv pasarela.key $serial.key
+curl -s http://lti.adabyron.uma.es/$serial.crt > $serial.crt
