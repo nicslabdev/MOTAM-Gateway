@@ -24,28 +24,8 @@ string_mask = default
 req_extensions = v3_req # The extensions to add to a certificate request
 
 [ req_distinguished_name ]
-countryName			= País de Nacimiento (código de 2 letras)
-countryName_default		= ES
-countryName_min			= 2
-countryName_max			= 2
-
-stateOrProvinceName		= Provincia de Nacimiento
-stateOrProvinceName_default	= Málaga
-
-localityName			= Localidad de Nacimiento
-localityName_default	= Málaga
-
-organizationName		= Organización
-organizationName_default	= MOTAM
-
-organizationalUnitName		= Tipo de licencia (normal o emergencia)
-organizationalUnitName_default	= normal
-
 commonName			= DNI (12345678Z)
-commonName_max			= 64
-
-emailAddress			= E-mail de registro
-emailAddress_max		= 64
+commonName_max			= 9
 
 [ v3_req ]
 
@@ -53,4 +33,3 @@ emailAddress_max		= 64
 
 basicConstraints = CA:FALSE
 keyUsage = nonRepudiation, digitalSignature, keyEncipherment
-subjectAltName = IP:192.168.0.1
