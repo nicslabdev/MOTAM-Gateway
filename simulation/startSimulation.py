@@ -3,7 +3,7 @@
 ######################################################
 # Python Script that simulates OBDII and sensors     #
 # MOTAM Project                                      #
-# Created by Manuel Montenegro, Sep 18, 2018. V. 1.2 #
+# Created by Manuel Montenegro, Nov 27, 2018. V. 1.3 #
 ######################################################
 
 import sqlite3
@@ -15,7 +15,9 @@ import ssl
 import json
 import os
 import subprocess
+import thread
 
+BUFF = 1024
 
 class ServiceExit(Exception):
 	# this is necessary for interrupt exception
@@ -31,6 +33,7 @@ def main():
 	sessionPath = "/home/pi/MOTAM/simulation/UMA-5_10_17-Simulation.db"
 	# ip and port assigned to the gateway (Raspberry Pi)
 	gatewayIP = "192.168.0.1"
+	# gatewayIP = "192.168.48.213"
 	# gateway secure port
 	gatewaySPort = 4443
 	# gateway no secure port: connection without TLS
@@ -45,14 +48,14 @@ def main():
 		# create the SSL context
 		SSLcontext = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 		# server certificate and private key (and its key)
-		SSLcontext.load_cert_chain(certfile="/home/pi/MOTAM/Certificates/192.168.0.1.crt", keyfile="/home/pi/MOTAM/Certificates/192.168.0.1.key", password = '123456')
+		SSLcontext.load_cert_chain(certfile="/home/pi/MOTAM/Certificates/192.168.0.1.crt.old", keyfile="/home/pi/MOTAM/Certificates/192.168.0.1.key.old", password = '123456')
 		# Certificate Authority
-		SSLcontext.load_verify_locations('/home/pi/MOTAM/Certificates/CA.crt')
+		SSLcontext.load_verify_locations('/home/pi/MOTAM/Certificates/CA.crt.old')
 		# certificates are required from the other side of the socket connection
 		SSLcontext.verify_mode = ssl.CERT_REQUIRED
 
 	except ssl.SSLError:
-		print('Private key doesn’t match with the certificate')
+		print('Private key doesnt match with the certificate')
 		exit()
 
 	procStart = subprocess.Popen(['sudo','/home/pi/MOTAM/wifi_pruebas/start.sh'])
@@ -91,6 +94,9 @@ def main():
 			# sock connection is a TLS wrapping of sSockConnection
 			sockConnection = SSLcontext.wrap_socket(sSockConnection, server_side=True)
 			print("SSL established. Peer: {}".format(sockConnection.getpeercert()))
+
+		# start a new thread that will receive and show data sent by client
+		thread.start_new_thread(handler, (sockConnection, clientAddress))
 
 		# connection to database
 		db=sqlite3.connect(sessionPath)
@@ -183,6 +189,35 @@ def main():
 		
 		procStop = subprocess.Popen(['sudo','/home/pi/MOTAM/wifi_pruebas/stop.sh'])
 		procStop.wait()
+
+# TODO: REVISAR ESTA FUNCIÓN
+# Thread that reads data sent by client
+def handler(clientsock,addr):
+	data = ''
+	cmd = ''
+	length = 0
+	len_tmp = 0
+	while 1:
+		data_tmp = clientsock.recv(BUFF)
+		if not cmd:
+			cmd = data_tmp.rstrip()
+		elif length == 0:
+			length = int(data_tmp)
+		elif len_tmp < length:
+			data += data_tmp.rstrip()
+			len_tmp += len(data_tmp.rstrip())
+			if len_tmp >= length:
+				process_cmd (cmd, data)
+				data = ''
+				cmd = ''
+				length = 0
+				len_tmp = 0
+
+		if not data_tmp: break
+
+# Process the command sent by AVATAR
+def process_cmd (cmd, data):
+	print cmd + ' ' + data
 
 
 # this is the interrupt handler. Used when the thread is finished (ctrl+c from keyboard)

@@ -30,8 +30,10 @@ Just execute in Raspberry Pi terminal:
  - Gateway no secure port: 9999
 
 ## Changelog
+### Version 1.3
+- Added support for receive data through socket. Now, AVATAR can send commands to Gateway.
 ### Version 1.2
- - Added two connection options. It is possible to receive simulation data by TLS connection through TLS port or by an unsecure connection through unsafe port.
+ - Added two connection options. It is possible client receives simulation data by TLS connection through TLS port or by an unsecure connection through unsafe port.
 ### Version 1.1
  - Code migrated to Python 3.
  - Added Transport Layer Security (TLS) to connection between gateway and smartphone.
