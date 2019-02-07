@@ -30,15 +30,15 @@ countryName_min			= 2
 countryName_max			= 2
 
 stateOrProvinceName		= Provincia de registro del vehículo
-stateOrProvinceName_default	= Málaga
+stateOrProvinceName_default	= Malaga
 
 localityName			= Localidad de registro del vehículo
-localityName_default	= Málaga
+localityName_default	= Malaga
 
 organizationName		= Organización
 organizationName_default	= MOTAM
 
-organizationalUnitName		= Tipo de vehículo (normal o emergencia)
+organizationalUnitName		= Tipo de vehículo (normal, emergencia o lento)
 organizationalUnitName_default	= normal
 
 commonName			= Matrícula (0000AAA)

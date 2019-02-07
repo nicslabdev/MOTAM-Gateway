@@ -5,3 +5,4 @@ serial=`curl -s -X POST -F 'csr=@pasarela.csr' http://lti.adabyron.uma.es/upload
 echo "Downloading certificate as $serial.crt, key saved as $serial.key"
 mv pasarela.key $serial.key
 curl -s http://lti.adabyron.uma.es/$serial.crt > $serial.crt
+rm pasarela.csr
