@@ -1,229 +1,305 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
-######################################################
-# Python Script that simulates OBDII and sensors     #
-# MOTAM Project                                      #
-# Created by Manuel Montenegro, Nov 27, 2018. V. 1.3 #
-######################################################
+#########################################################
+# Python3 Script that simulates OBDII, GPS and beacons  #
+# received data from car on a supposed trip.            #
+# MOTAM project: https://www.nics.uma.es/projects/motam #
+# Created by Manuel Montenegro, Feb 22, 2019.    V. 2.0 #
+#########################################################
 
-import sqlite3
-import signal
+
 import time
-import socket
-import select
-import ssl
+import argparse
+import threading
+import sqlite3
+import queue
 import json
-import os
-import subprocess
-import thread
+import socket
+import ssl
 
-BUFF = 1024
 
-class ServiceExit(Exception):
-	# this is necessary for interrupt exception
-    pass
+# ==== Global variables ====
+
+# Version of this script
+scriptVersion = 2.0
+
+# path of session database file
+sessionRoute = "/home/pi/MOTAM/simulation/sessions/"
+sessionPath = sessionRoute+"UMA-5_10_17-Simulation_Beacons_v2.db"
+
+# path of certificate and its key
+certRoute = "/home/pi/MOTAM/certificates/"
+certPath = certRoute+"pasarela_normal.crt"
+keyCertPath = certRoute+"pasarela_normal.key"
+
+# path of CA certificate
+caCertPath = certRoute+"cacert.crt"
+
+# time lapse between frame transmissions from Gateway to AVATAR in seconds
+readStep = 1
+
+# OBD II and GPS data can be loaded from DB or read from hardware interface
+simulatedObdGps = True
+
+# Bluetooth 5 beacons can be loaded from DB or read from hardware
+simulatedBeacons = True
+
+# ip and port assigned to the gateway in AVATAR-Gateway connection
+# gatewayIP = "192.168.0.1"
+gatewayIP = "192.168.48.213"
+
+# gateway port in AVATAR-Gateway connection
+gatewayPort = 4443
+
+# queue where dbReader thread will put parsed simulation database data
+dbParsedQueue = queue.Queue()
+
+
+# ==== Main execution ====
 
 def main():
 
-	# register the signal handlers for interrupting the thread
-	signal.signal(signal.SIGTERM, service_shutdown)
-	signal.signal(signal.SIGINT, service_shutdown)
+    # capture command line arguments
+    setUpArgParser()
 
-	# path of session database file
-	sessionPath = "/home/pi/MOTAM/simulation/UMA-5_10_17-Simulation.db"
-	# ip and port assigned to the gateway (Raspberry Pi)
-	gatewayIP = "192.168.0.1"
-	# gatewayIP = "192.168.48.213"
-	# gateway secure port
-	gatewaySPort = 4443
-	# gateway no secure port: connection without TLS
-	gatewayPort = 9999
+    # create SSL socket for communication with AVATAR
+    sock = createSslSocket ()
 
-	db = None
-	sSockConnection = None
-	sockConnection = None
+    # threading event used for closing safely the DataBase when interrupt signal is received
+    dbReaderThreadStop = threading.Event()
+    # start database reader and parser thread
+    dbReaderThread = threading.Thread(target=dbReader, args=(dbReaderThreadStop,))
+    dbReaderThread.start()
 
-	# TLS configuration for connection
-	try:
-		# create the SSL context
-		SSLcontext = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-		# server certificate and private key (and its key)
-		SSLcontext.load_cert_chain(certfile="/home/pi/MOTAM/Certificates/192.168.0.1.crt.old", keyfile="/home/pi/MOTAM/Certificates/192.168.0.1.key.old", password = '123456')
-		# Certificate Authority
-		SSLcontext.load_verify_locations('/home/pi/MOTAM/Certificates/CA.crt.old')
-		# certificates are required from the other side of the socket connection
-		SSLcontext.verify_mode = ssl.CERT_REQUIRED
+    # threading event used for closing safely the socket connection when interrupt signal is received
+    sendDataThreadStop = threading.Event()
+    # start database reader and parser thread
+    sendDataThread = threading.Thread(target=sendData, args=(dbReaderThreadStop,sock))
+    sendDataThread.start()
 
-	except ssl.SSLError:
-		print('Private key doesnt match with the certificate')
-		exit()
+    try:
+        dbReaderThread.join()
+        sendDataThread.join()
 
-	procStart = subprocess.Popen(['sudo','/home/pi/MOTAM/wifi_pruebas/start.sh'])
-	procStart.wait()
-	print()
-
-	# executes this while it doesn't receive a terminal signal
-	try:
-		# create secure socket and no TLS socket for data transmission
-		sSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		# prevent "Address already in use" error
-		sSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		# asociate the secure socket with server address an port
-		sSock.bind((gatewayIP, gatewaySPort))
-		sock.bind((gatewayIP, gatewayPort))
-		# put the secure socket in server mode and only accept 1 connection
-		sSock.listen(1)
-		sock.listen(1)
-		# list of sockets: secure and no secure
-		socketList = [sSock, sock]
-
-		print('Waiting connection...')
-		# this block the thread until a connection arrives
-		# readSocketList is a list of sockets ready for reading from the gateway
-		readSocketList, writeList, exceptionList = select.select(socketList, [], [])
-
-		# if there are more than 1 socket in list, this will only accept the first one
-		# if the connection is not secure
-		if readSocketList[0] is sock:
-			sockConnection, clientAddress = readSocketList[0].accept()
-		# if the connection is secure 
-		elif readSocketList[0] is sSock:
-			sSockConnection, clientAddress = readSocketList[0].accept()
-			# sock connection is a TLS wrapping of sSockConnection
-			sockConnection = SSLcontext.wrap_socket(sSockConnection, server_side=True)
-			print("SSL established. Peer: {}".format(sockConnection.getpeercert()))
-
-		# start a new thread that will receive and show data sent by client
-		thread.start_new_thread(handler, (sockConnection, clientAddress))
-
-		# connection to database
-		db=sqlite3.connect(sessionPath)
-		tripCurs = db.cursor()
-		gpsCurs = db.cursor()
-		obdCurs = db.cursor()
-		beacons_dataCurs = db.cursor()
-
-		while True:
-
-			# Data Base cursor for beacons data table
-			beacons_dataCurs.execute("SELECT * FROM beacons_data")
-			# take the first beacon data row from table
-			beacons_dataRow = beacons_dataCurs.fetchone()
-
-			# everytime that engine stop and start during session saving, new trip is created
-			for trip in tripCurs.execute("SELECT * FROM trip"):
-				start = trip[1]
-				end = trip[2]
-
-				nextTime = None
-
-				for gpsRow in gpsCurs.execute("SELECT * FROM gps WHERE time>=(?) AND time<(?)",(start,end)):
-					# if this is not the first iteration...
-					if (nextTime != None):
-						currentTime = nextTime
-						nextTime = gpsRow[6]
-
-						# time difference between two samples
-						diff = nextTime - currentTime
-
-						# sleep the thread: simulating gps signal delay
-						time.sleep(diff)
-
-						# take the same sample from obd table
-						obdCurs.execute("SELECT * FROM obd WHERE time=(?)",(currentTime,))
-						obdRow = obdCurs.fetchone()
+    # finishing the execution with Ctrl + c 
+    except KeyboardInterrupt:
+        # send close event in order to safely close DB and socket
+        dbReaderThreadStop.set()
+        sendDataThreadStop.set()
+    
+    # unknown exception from nobody know where
+    except Exception as error:
+        print ("\r\nUnknown error\r\n ", error)
 
 
-						# obtained information about OBDII & GPS from sessions database
-						vss = int(obdRow[2])
-						lat = gpsRow[0]
-						lon = gpsRow[1]
-						gpsTime = int(gpsRow[5])
-						course = int(gpsRow[4])
+# manage command line interface arguments
+def setUpArgParser ( ):
 
-						# structure for generating JSON
-						data = {"carInfo": {"engineOn":True, "vss":vss, "lat":lat, "lon":lon, "gpsTime":gpsTime, "course":course}, "sensors": []}
+    # description of the script shown in command line
+    scriptDescription = 'This script runs a car trip simulation. The purpose is testing MOTAM subsystems'
 
-						# conditions for triggering a new simulated beacon: beacons_dataRow will be None when no more rows lefts
-						if ( (beacons_dataRow != None) and (currentTime >= beacons_dataRow[0])):
-							
-							# load JSON data from beacons_data database table
-							sensorData = json.loads (beacons_dataRow[1])
-							# add simulated sensors data to general data
-							data ["sensors"] = sensorData["sensors"]
+    # initiate the arguments parser
+    argParser = argparse.ArgumentParser(description = scriptDescription)
 
-							# take the next simulated beacon data
-							beacons_dataRow = beacons_dataCurs.fetchone()
+    # command line arguments
+    argParser.add_argument("-l", "--session", help="Loads a specific session database. You have to specify the database file. The file must be on session folder. By default, the script loads a saved session trip.")
+    argParser.add_argument("-c", "--cert", help="Loads a specific gateway certificate. By default, the script loads certificate for normal vehicle. The certificate file must be on cetificates folder.")
+    argParser.add_argument("-a", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on cetificates folder.")
+    argParser.add_argument("-s", "--step", help="Frequency of frame transmissions from Gateway to AVATAR in seconds.", type=float)
+    # argParser.add_argument("-r", "--real_obd_gps", help="Use OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB. By default, the script loads this data from session trip.", action='store_true')
+    # argParser.add_argument("-b", "--real_beacons", help="Use nRF52840 dongle for capturing road beacons instead of simulating its values. By default, the script loads this data from session trip.", action='store_true')
+    argParser.add_argument("-v", "--version", help="Show script version", action="store_true")
 
-						# encode the data to JSON format
-						jsonData = json.dumps(data)
-						
-						# send the json by socket
-						sockConnection.sendall (jsonData.encode())						
+    args = argParser.parse_args ()
 
-					else:				
-						nextTime = gpsRow[6]
+    if args.session:
+        global sessionPath
+        sessionPath = sessionRoute+args.session
 
+    if args.cert:
+        global certPath
+        global keyCertPath
+        certPath = certRoute + args.cert
+        keyCertPath = certRoute + args.cert.split('.')[0]+'.key'
 
-	# if receive terminal signal
-	except ServiceExit:
-		print("Terminal Signal received")
+    if args.ca:
+        global caCertPath
+        caCertPath = certRoute+args.ca
 
-	# if the other side close the socket...
-	except socket.error:
-		print("Connection Closed")
-		
-	finally:
-		if (db != None):
-			db.close()
-		if(sockConnection != None):
-			sockConnection.close()
-		if (sSockConnection != None):
-			sSockConnection.close()
-		if (sSock != None):
-			sSock.close()
-		if (sock != None):
-			sock.close()
-		
-		procStop = subprocess.Popen(['sudo','/home/pi/MOTAM/wifi_pruebas/stop.sh'])
-		procStop.wait()
+    if args.step:
+        global readStep
+        readStep = args.step
 
-# TODO: REVISAR ESTA FUNCIÓN
-# Thread that reads data sent by client
-def handler(clientsock,addr):
-	data = ''
-	cmd = ''
-	length = 0
-	len_tmp = 0
-	while 1:
-		data_tmp = clientsock.recv(BUFF)
-		if not cmd:
-			cmd = data_tmp.rstrip()
-		elif length == 0:
-			length = int(data_tmp)
-		elif len_tmp < length:
-			data += data_tmp.rstrip()
-			len_tmp += len(data_tmp.rstrip())
-			if len_tmp >= length:
-				process_cmd (cmd, data)
-				data = ''
-				cmd = ''
-				length = 0
-				len_tmp = 0
+    # if args.real_obd_gps:
+    #     global simulatedObdGps
+    #     simulatedObdGps = False
 
-		if not data_tmp: break
+    # if args.real_beacons:
+    #     global simulatedBeacons
+    #     simulatedBeacons = False
 
-# Process the command sent by AVATAR
-def process_cmd (cmd, data):
-	print cmd + ' ' + data
+    if args.version:
+        print ("MOTAM Simulation script version: ", scriptVersion)
+        exit()
 
 
-# this is the interrupt handler. Used when the thread is finished (ctrl+c from keyboard)
-def service_shutdown(signum, frame):
-    raise ServiceExit
+# create a SSL connection with AVATAR
+def createSslSocket ( ):
+    # TLS configuration for connection
+    try:
+        # create the SSL context
+        SSLcontext = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        # server certificate and private key (and its key)
+        SSLcontext.load_cert_chain(certfile=certPath, keyfile=keyCertPath, password = '123456')
+        # Certificate Authority
+        SSLcontext.load_verify_locations(caCertPath)
+        # certificates are required from the other side of the socket connection
+        SSLcontext.verify_mode = ssl.CERT_REQUIRED
 
-# start process 
+        # create secure socket for data transmission
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # prevent "Address already in use" error
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # asociate the secure socket with server address an port
+        sock.bind((gatewayIP, gatewayPort))
+        # put the secure socket in server mode and only accept 1 connection
+        sock.listen(1)
+        # socket accepts the connection
+        sockConnection, clientAddress = sock.accept()
+        # wrap socket with SSL layer
+        sslSockConnection = SSLcontext.wrap_socket(sockConnection, server_side=True)
+
+        # print("SSL established. Peer: {}".format(sslSockConnection.getpeercert()))
+
+        return sslSockConnection
+
+
+    except ssl.SSLError:
+        print('Private key doesnt match with the certificate\r\n')
+        exit()
+
+    # if the other side close the socket...
+    except socket.error:
+        print("Connection Closed")
+        exit()
+
+    except KeyboardInterrupt:
+        exit()
+
+
+# read simulated session DB and parse it into data units
+def dbReader ( dbReaderThreadStop ):
+
+    global readStep
+
+    # connection to database
+    db=sqlite3.connect(sessionPath)
+    gpsCurs = db.cursor()
+    obdCurs = db.cursor()
+    beaconsDataCurs = db.cursor()
+
+    try:
+        gpsCurs.execute("SELECT * FROM gps")
+        obdCurs.execute("SELECT * FROM obd")
+        beaconsDataCurs.execute("SELECT * FROM beacons_data")
+
+        lastTime = None
+
+        beacons_dataRow = beaconsDataCurs.fetchone()
+
+        while not dbReaderThreadStop.is_set():
+            # collect first row data from gps table
+            gpsRow = gpsCurs.fetchone()
+            # collect first row data from obd table
+            obdRow = gpsCurs.fetchone()
+
+            # if the end of database table is reached, exit from loop
+            if gpsRow == None or obdRow == None:
+                break
+
+            # get data values from database
+            lat = gpsRow[0]
+            lon = gpsRow[1]
+            course = int(gpsRow[4])
+            gpsTime = int(gpsRow[5])
+            vss = int(obdRow[2])
+
+            # filter samples by read step: discard samples too close
+            if lastTime is None or (lastTime+readStep) <= gpsRow[6]:
+                lastTime = gpsRow[6]
+                # structure for generated JSON
+                data = {"time":gpsRow[6], "json": {"carInfo": {"engineOn":True, "vss":vss, "lat":lat, "lon":lon, "gpsTime":gpsTime, "course":course}, "sensors": []}}
+                
+                # if there is beacon data for this instant of time, add to data 
+                if beacons_dataRow != None and beacons_dataRow[0] <= lastTime:
+
+                    # load JSON data from beacons_data database table
+                    sensorData = json.loads (beacons_dataRow[1])
+                    # add simulated sensors data to general data
+                    data ["json"]["sensors"] = sensorData["sensors"]
+                    # take the following row
+                    beacons_dataRow = beaconsDataCurs.fetchone()
+
+                dbParsedQueue.put(data)
+
+
+    except sqlite3.DatabaseError:
+        print ('Database Error\r\n')
+
+    except queue.Full:
+        print('The queue is full\r\n')
+
+    except Exception as error:
+        print ("Unknown error\r\n ", error)
+
+    finally:
+        # close safely the database
+        db.close()
+
+
+# Read units of data from database session trip and send it to AVATAR
+def sendData ( sendDataThreadStop, sock ):
+
+    # take the first data unit from the queue
+    data = dbParsedQueue.get()
+
+    # this variables will control the sample frequency
+    currentSimulatedTime = None
+    lastSimulatedTime = data["time"]
+    
+    try:
+        # send the first json
+        sock.sendall (json.dumps(data["json"]).encode())
+
+        # this will stop the execution with keyboard interrupt
+        while not sendDataThreadStop.is_set():
+            # if this is the first iteration...
+            if currentSimulatedTime is None:
+                # take the data unit from the queue
+                data = dbParsedQueue.get()
+                currentSimulatedTime = data["time"]
+            
+            # if this isn't the first iteration
+            else:
+                time.sleep(currentSimulatedTime-lastSimulatedTime)
+
+                # send the next json
+                sock.sendall (json.dumps(data["json"]).encode())
+                
+                try:
+                    # take the data unit from the queue
+                    data = dbParsedQueue.get(block=False)
+                    lastSimulatedTime = currentSimulatedTime
+                    currentSimulatedTime = data["time"]
+                    
+                except queue.Empty:
+                    pass
+
+    # if the other side close the socket...
+    except socket.error:
+        pass
+
+
+# start script
 if __name__ == '__main__':
     main()
