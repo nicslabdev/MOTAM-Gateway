@@ -30,7 +30,6 @@ Just execute in Raspberry Pi terminal:
 
 - Gateway IP direction: 192.168.0.1
 - Gateway TLS port: 4443
-- Gateway no secure port: 9999
 
 ## Changelog
 
