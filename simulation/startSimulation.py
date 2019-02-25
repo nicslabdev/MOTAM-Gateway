@@ -45,8 +45,8 @@ simulatedObdGps = True
 simulatedBeacons = True
 
 # ip and port assigned to the gateway in AVATAR-Gateway connection
-# gatewayIP = "192.168.0.1"
-gatewayIP = "192.168.48.213"
+gatewayIP = "192.168.0.1"
+# gatewayIP = "192.168.48.213"
 
 # gateway port in AVATAR-Gateway connection
 gatewayPort = 4443
