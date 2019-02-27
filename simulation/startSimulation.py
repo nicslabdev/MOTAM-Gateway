@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Feb 22, 2019.    V. 2.0 #
+# Created by Manuel Montenegro, Feb 27, 2019.    V. 2.0 #
 #########################################################
 
 
@@ -95,6 +95,12 @@ def main():
 # manage command line interface arguments
 def setUpArgParser ( ):
 
+    global sessionPath
+    global certPath
+    global keyCertPath
+    global caCertPath
+    global readStep
+
     # description of the script shown in command line
     scriptDescription = 'This script runs a car trip simulation. The purpose is testing MOTAM subsystems'
 
@@ -105,7 +111,7 @@ def setUpArgParser ( ):
     argParser.add_argument("-l", "--session", help="Loads a specific session database. You have to specify the database file. The file must be on session folder. By default, the script loads a saved session trip.")
     argParser.add_argument("-c", "--cert", help="Loads a specific gateway certificate. By default, the script loads certificate for normal vehicle. The certificate file must be on cetificates folder.")
     argParser.add_argument("-a", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on cetificates folder.")
-    argParser.add_argument("-s", "--step", help="Frequency of frame transmissions from Gateway to AVATAR in seconds.", type=float)
+    argParser.add_argument("-s", "--step", help="Frequency of frame transmissions from Gateway to AVATAR in seconds. By default, "+str(readStep)+" seconds.", type=float)
     # argParser.add_argument("-r", "--real_obd_gps", help="Use OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB. By default, the script loads this data from session trip.", action='store_true')
     # argParser.add_argument("-b", "--real_beacons", help="Use nRF52840 dongle for capturing road beacons instead of simulating its values. By default, the script loads this data from session trip.", action='store_true')
     argParser.add_argument("-v", "--version", help="Show script version", action="store_true")
@@ -113,21 +119,16 @@ def setUpArgParser ( ):
     args = argParser.parse_args ()
 
     if args.session:
-        global sessionPath
         sessionPath = sessionRoute+args.session
 
     if args.cert:
-        global certPath
-        global keyCertPath
         certPath = certRoute + args.cert
         keyCertPath = certRoute + args.cert.split('.')[0]+'.key'
 
     if args.ca:
-        global caCertPath
         caCertPath = certRoute+args.ca
 
     if args.step:
-        global readStep
         readStep = args.step
 
     # if args.real_obd_gps:
@@ -164,6 +165,7 @@ def createSslSocket ( ):
         sock.bind((gatewayIP, gatewayPort))
         # put the secure socket in server mode and only accept 1 connection
         sock.listen(1)
+        print ("Waiting connection...")
         # socket accepts the connection
         sockConnection, clientAddress = sock.accept()
         # wrap socket with SSL layer
