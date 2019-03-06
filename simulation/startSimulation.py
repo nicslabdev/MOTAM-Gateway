@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Feb 27, 2019.    V. 2.0 #
+# Created by Manuel Montenegro, Mar 06, 2019.    V. 2.1 #
 #########################################################
 
 
@@ -28,7 +28,7 @@ sessionRoute = "/home/pi/MOTAM/simulation/sessions/"
 sessionPath = sessionRoute+"UMA-5_10_17-Simulation_Beacons_v2.db"
 
 # path of certificate and its key
-certRoute = "/home/pi/MOTAM/certificates/"
+certRoute = "/home/pi/MOTAM/certs/"
 certPath = certRoute+"pasarela_normal.crt"
 keyCertPath = certRoute+"pasarela_normal.key"
 
