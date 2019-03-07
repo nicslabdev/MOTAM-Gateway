@@ -24,11 +24,11 @@ import ssl
 scriptVersion = 2.0
 
 # path of session database file
-sessionRoute = "/home/pi/MOTAM/simulation/sessions/"
+sessionRoute = "sessions/"
 sessionPath = sessionRoute+"UMA-5_10_17-Simulation_Beacons_v2.db"
 
 # path of certificate and its key
-certRoute = "/home/pi/MOTAM/certs/"
+certRoute = "../certs/"
 certPath = certRoute+"pasarela_normal.crt"
 keyCertPath = certRoute+"pasarela_normal.key"
 
