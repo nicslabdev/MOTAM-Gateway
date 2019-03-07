@@ -46,7 +46,6 @@ simulatedBeacons = True
 
 # ip and port assigned to the gateway in AVATAR-Gateway connection
 gatewayIP = "192.168.0.1"
-# gatewayIP = "192.168.48.213"
 
 # gateway port in AVATAR-Gateway connection
 gatewayPort = 4443
@@ -100,6 +99,7 @@ def setUpArgParser ( ):
     global keyCertPath
     global caCertPath
     global readStep
+    global gatewayIP
 
     # description of the script shown in command line
     scriptDescription = 'This script runs a car trip simulation. The purpose is testing MOTAM subsystems'
@@ -112,6 +112,7 @@ def setUpArgParser ( ):
     argParser.add_argument("-c", "--cert", help="Loads a specific gateway certificate. By default, the script loads certificate for normal vehicle. The certificate file must be on cetificates folder.")
     argParser.add_argument("-a", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on cetificates folder.")
     argParser.add_argument("-s", "--step", help="Frequency of frame transmissions from Gateway to AVATAR in seconds. By default, "+str(readStep)+" seconds.", type=float)
+    argParser.add_argument("-d", "--address", help="MOTAM Gateway IP address. By default, 192.168.0.1", type=str)
     # argParser.add_argument("-r", "--real_obd_gps", help="Use OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB. By default, the script loads this data from session trip.", action='store_true')
     # argParser.add_argument("-b", "--real_beacons", help="Use nRF52840 dongle for capturing road beacons instead of simulating its values. By default, the script loads this data from session trip.", action='store_true')
     argParser.add_argument("-v", "--version", help="Show script version", action="store_true")
@@ -130,6 +131,9 @@ def setUpArgParser ( ):
 
     if args.step:
         readStep = args.step
+
+    if args.address:
+        gatewayIP = args.address
 
     # if args.real_obd_gps:
     #     global simulatedObdGps
