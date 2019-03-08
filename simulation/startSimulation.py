@@ -21,7 +21,7 @@ import ssl
 # ==== Global variables ====
 
 # Version of this script
-scriptVersion = 2.0
+scriptVersion = 2.1
 
 # path of session database file
 sessionRoute = "sessions/"
