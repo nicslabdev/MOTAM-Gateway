@@ -33,6 +33,10 @@ Just execute in Raspberry Pi terminal:
 
 ## Changelog
 
+### Version 2.1
+
+- Added command line arguments for choosing IP Address of Gateway
+
 ### Version 2.0
 
 - Deleted not secure socket connection.
