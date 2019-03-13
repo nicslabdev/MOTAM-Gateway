@@ -26,6 +26,6 @@ It's possible to select the kind of data that is simulated and what data come fr
 How-to can be found on simulation folder.
 
 ## Bluetooth 5 Beacon Scanner
-The firmware of nRF52840 dongle Beacon Scanner can be found on its repository.
+The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub repository.
 
 > [**MOTAM Scanner repository on GitHub.**](https://github.com/nicslabdev/MOTAM-Scanner)
