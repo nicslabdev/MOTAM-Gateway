@@ -45,7 +45,8 @@ simulatedObdGps = True
 simulatedBeacons = True
 
 # ip and port assigned to the gateway in AVATAR-Gateway connection
-gatewayIP = "192.168.0.1"
+# gatewayIP = "192.168.0.1"
+gatewayIP = "127.0.0.1"
 
 # gateway port in AVATAR-Gateway connection
 gatewayPort = 4443
@@ -234,7 +235,7 @@ def dbReader ( dbReaderThreadStop ):
             if lastTime is None or (lastTime+readStep) <= gpsRow[6]:
                 lastTime = gpsRow[6]
                 # structure for generated JSON
-                data = {"time":gpsRow[6], "json": {"carInfo": {"engineOn":True, "vss":vss, "lat":lat, "lon":lon, "gpsTime":gpsTime, "course":course}, "sensors": []}}
+                data = {"time":gpsRow[6], "json": {"carInfo": {"engineOn":True, "vss":vss, "lat":lat, "lon":lon, "gpsTime":gpsTime, "course":course}}}
                 
                 # if there is beacon data for this instant of time, add to data 
                 if beacons_dataRow != None and beacons_dataRow[0] <= lastTime:
@@ -242,7 +243,9 @@ def dbReader ( dbReaderThreadStop ):
                     # load JSON data from beacons_data database table
                     sensorData = json.loads (beacons_dataRow[1])
                     # add simulated sensors data to general data
-                    data ["json"]["sensors"] = sensorData["sensors"]
+                    data2 = {"time":gpsRow[6], "json": {"sensors": []}}
+                    data2 ["json"]["sensors"] = sensorData["sensors"]
+                    dbParsedQueue.put(data2)
                     # take the following row
                     beacons_dataRow = beaconsDataCurs.fetchone()
 
