@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Mar 06, 2019.    V. 2.1 #
+# Created by Manuel Montenegro, Mar 06, 2019.    V. 2.3 #
 #########################################################
 
 
@@ -21,7 +21,7 @@ import ssl
 # ==== Global variables ====
 
 # Version of this script
-scriptVersion = 2.1
+scriptVersion = 2.3
 
 # path of session database file
 sessionRoute = "sessions/"
@@ -45,8 +45,7 @@ simulatedObdGps = True
 simulatedBeacons = True
 
 # ip and port assigned to the gateway in AVATAR-Gateway connection
-# gatewayIP = "192.168.0.1"
-gatewayIP = "127.0.0.1"
+gatewayIP = "192.168.0.1"
 
 # gateway port in AVATAR-Gateway connection
 gatewayPort = 4443
@@ -235,7 +234,7 @@ def dbReader ( dbReaderThreadStop ):
             if lastTime is None or (lastTime+readStep) <= gpsRow[6]:
                 lastTime = gpsRow[6]
                 # structure for generated JSON
-                data = {"time":gpsRow[6], "json": {"carInfo": {"engineOn":True, "vss":vss, "lat":lat, "lon":lon, "gpsTime":gpsTime, "course":course}}}
+                data = {"time":gpsRow[6], "json": {"carInfo": {"engineOn":True, "vss":vss, "lat":lat, "lon":lon, "gpsTime":gpsTime, "course":course}, "sensors": []}}
                 
                 # if there is beacon data for this instant of time, add to data 
                 if beacons_dataRow != None and beacons_dataRow[0] <= lastTime:
@@ -243,7 +242,7 @@ def dbReader ( dbReaderThreadStop ):
                     # load JSON data from beacons_data database table
                     sensorData = json.loads (beacons_dataRow[1])
                     # add simulated sensors data to general data
-                    data2 = {"time":gpsRow[6], "json": {"sensors": []}}
+                    data2 = {"time":gpsRow[6], "json": {"carInfo": {}, "sensors": []}}
                     data2 ["json"]["sensors"] = sensorData["sensors"]
                     dbParsedQueue.put(data2)
                     # take the following row
