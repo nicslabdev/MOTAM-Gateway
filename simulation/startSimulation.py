@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Mar 06, 2019.    V. 2.3 #
+# Created by Manuel Montenegro, Jun 17, 2019.    V. 2.2 #
 #########################################################
 
 
@@ -21,7 +21,7 @@ import ssl
 # ==== Global variables ====
 
 # Version of this script
-scriptVersion = 2.3
+scriptVersion = 2.2
 
 # path of session database file
 sessionRoute = "sessions/"
@@ -110,7 +110,7 @@ def setUpArgParser ( ):
     # command line arguments
     argParser.add_argument("-l", "--session", help="Loads a specific session database. You have to specify the database file. The file must be on session folder. By default, the script loads a saved session trip.")
     argParser.add_argument("-c", "--cert", help="Loads a specific gateway certificate. By default, the script loads certificate for normal vehicle. The certificate file must be on cetificates folder.")
-    argParser.add_argument("-a", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on cetificates folder.")
+    argParser.add_argument("-a", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on certificates folder.")
     argParser.add_argument("-s", "--step", help="Frequency of frame transmissions from Gateway to AVATAR in seconds. By default, "+str(readStep)+" seconds.", type=float)
     argParser.add_argument("-d", "--address", help="MOTAM Gateway IP address. By default, 192.168.0.1", type=str)
     # argParser.add_argument("-r", "--real_obd_gps", help="Use OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB. By default, the script loads this data from session trip.", action='store_true')

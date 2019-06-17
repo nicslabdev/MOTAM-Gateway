@@ -33,6 +33,10 @@ Just execute in Raspberry Pi terminal:
 
 ## Changelog
 
+### Version 2.2
+
+- Now sensor data and car_info is sent separately
+
 ### Version 2.1
 
 - Added command line arguments for choosing IP Address of Gateway
