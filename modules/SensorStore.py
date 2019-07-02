@@ -53,16 +53,16 @@ class SensorStore:
                 self.sensorList[beaconId]["time"] = time.time()
                 self.sensorList[beaconId]["payload"] = blePayload
 
-                # generates a presence 2 Dict (updated data beacon)
-                sensorDict = {"sensors":[self.beaconDataToDict(blePayload, 2)]}
+                # generates a presence True Dict (updated data beacon)
+                sensorDict = {"sensors":[self.beaconDataToDict(blePayload, True)]}
                 
                 return sensorDict
         
         # if this beacon isn't in the dictionary...
         else:
             self.sensorList[beaconId]={"time": time.time(), "payload": blePayload}
-            # generates a presence 1 Dict (new beacon)
-            sensorDict = {"sensors":[self.beaconDataToDict(blePayload, 1)]}
+            # generates a presence True Dict (new beacon)
+            sensorDict = {"sensors":[self.beaconDataToDict(blePayload, True)]}
 
             return sensorDict
 
@@ -79,8 +79,8 @@ class SensorStore:
         # if there are elements to remove...
         if len(beaconIdRemoveList) > 0:
 
-            # generates a presence 0 Dict (old beacon)
-            sensorDict = self.beaconIdListToDict (beaconIdRemoveList, 0)
+            # generates a presence False Dict (old beacon)
+            sensorDict = self.beaconIdListToDict (beaconIdRemoveList, False)
             return sensorDict
 
         else:
@@ -96,7 +96,7 @@ class SensorStore:
         for beaconId in beaconIdList:
             beaconData = self.sensorList[beaconId]["payload"]
             beaconDataParsed["sensors"].append (self.beaconDataToDict(beaconData, presence))
-            if (presence == 0):
+            if (presence == False):
                 self.sensorList.pop(beaconId)
 
         return beaconDataParsed
