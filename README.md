@@ -7,8 +7,6 @@ The gateway collects all the road state and vehicles information from MOTAM infr
 Another MOTAM related repositories and more info about MOTAM project can be found on:
 > [**MOTAM project website by NICS.**](https://www.nics.uma.es/projects/motam)
 
-## 
-
 ## Hardware list
 MOTAM Gateway is supported by Raspberry Pi 3 Model B. 
 Several peripherals are attached to Raspberry Pi in order to collect different kind of data from the own car, near vehicles and Road Side Units.
@@ -24,7 +22,26 @@ The peripherals are listed below:
 
 ## Usage
 Just execute in Raspberry Pi terminal:
-sudo python3 ~/MOTAM-Gateway/startSimulation.py
+
+	cd ~/MOTAM-Gateway/
+    sudo python3 startGateway.py
+    
+For help:
+
+    sudo python3 startGateway.py --help
+    
+For Interactive Scanner mode (default location of beacons):
+
+	sudo python3 startGateway.py --interactive
+
+For Interactive Scanner mode and custom location coordinates of beacons:
+
+	sudo python3 startGateway.py --interactive 36.715923 -4.477482
+
+For Interactive Scanner mode and logging data received from AVATAR:
+
+	sudo python3 startGateway.py --interactive --dump
+
 
 ## Connection parameters
 - Gateway IP direction: 192.168.0.1
@@ -32,6 +49,7 @@ sudo python3 ~/MOTAM-Gateway/startSimulation.py
 
 ## Simulation
 MOTAM-Gateway can simulate a car trip in order to send simulated data to AVATAR app. 
+
 It's possible to select the kind of data that is simulated and what data come from real sources. This may be useful for development and testing purpouses.
 
 Here you can find a preloaded simulation of a car trip. The information is sent via Wifi Direct socket in JSON format.
@@ -65,6 +83,7 @@ List of MOTAM beacons included in the Interactive mode:
 - Bicycle in motion.
 - Bicycle accident.
 
+> In order to facilitate development work, Interactive Scanner mode will notify with "presence: false" JSON after 3 seconds.
 
 ## Bluetooth 5 Beacon Scanner
 The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub repository.
@@ -72,13 +91,12 @@ The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub reposi
 > [**MOTAM Scanner repository on GitHub.**](https://github.com/nicslabdev/MOTAM-Scanner)
 
 ## Changelog
-### Version 3.0
+### Version 3.0 (alpha)
 - Major change: Renamed script to startGateway.py. Now, this is the main script that runs all the MOTAM Gateway functionalities.
 - Added function for receiving data from socket. This will be used for receiving MOTAM user picture sent by AVATAR.
 - Added interactive simulated BLE scanner. In this mode, you can simulate in real time the capture of predefined MOTAM beacons. It's possible to change the location of the simulated MOTAM beacons.
 - Added command line arguments in order to activate the main execution modes what user want: BLE 4 Scanner, BLE 5 Scanner, Interactive simulated scanner, etc.
 - Added command line arguments '--dump' for logging all the data received from AVATAR by socket for development purposes on 'client.log' file.
-- 
 ### Version 2.2
 - Now sensor data and car_info is sent separately
 ### Version 2.1
