@@ -78,7 +78,6 @@ class SensorStore:
         
         # if there are elements to remove...
         if len(beaconIdRemoveList) > 0:
-
             # generates a presence False Dict (old beacon)
             sensorDict = self.beaconIdListToDict (beaconIdRemoveList, False)
             return sensorDict

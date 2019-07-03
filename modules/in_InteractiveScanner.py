@@ -13,11 +13,11 @@ from modules import SensorStore
 
 class InteractiveScanner:
 
-    def __init__ (self, threadStopEvent, beaconsQueue, coordinates):
+    def __init__ (self, threadStopEvent, beaconsQueue, beaconThreshold, coordinates):
         self.threadStopEvent = threadStopEvent                          # Event from main thread in order to stop all threads
         self.beaconsQueue = beaconsQueue
         self.sensorStore = SensorStore.SensorStore()
-        self.beaconThreshold = 3                                        # Seconds after the beacon will be removed from list
+        self.beaconThreshold = beaconThreshold                          # Seconds after the beacon will be removed from list
         
         self.dataBeaconSamples = {
             1: ("Sillita sentado sin abrochar", "0001000200030004040100"),
@@ -31,11 +31,6 @@ class InteractiveScanner:
             9: ("Carretera nieve", "4212DD69C08FF4690203"),
             10: ("Bicicleta en movimiento", "00010002000300040302"),
             11: ("Bicicleta accidentada", "00010002000300040303")
-            # 9: {"Sillita sentado sin abrochar": "01"},
-            # 10: {"Sillita sentado abrochado": "01"},
-            # 11: {"Sillita sin sentar no abrochado": "01"},
-            # 12: {"Semáforo inteligente rojo 10 segundos": "01"},
-            # 13: {"Semáforo inteligente verde 3 segundos": "01"},
             # 14: {"infoPanel Incendio": "01"},
             # 15: {"infoPanel Carrera ciclista": "01"},
             # 16: {"Peatón cerca": "01"},
@@ -49,13 +44,12 @@ class InteractiveScanner:
             newLon = str(hex(struct.unpack('<I', struct.pack('<f', coordinates[1]))[0])).split('x')[1].upper()
 
             for element in self.dataBeaconSamples:
-                oldLat = self.dataBeaconSamples[element][1][0:8]
-                oldLon = self.dataBeaconSamples[element][1][8:16]
                 newBeaconData = newLat + newLon + self.dataBeaconSamples[element][1][16:]
                 self.dataBeaconSamples[element] = (self.dataBeaconSamples[element][0],newBeaconData)
 
     def run (self):
         interactiveThread = threading.Thread(target=self.terminalInputOutput)
+        interactiveThread.daemon = True
         interactiveThread.start()
         self.purgeStartTimer ( )
         return interactiveThread
@@ -80,11 +74,12 @@ class InteractiveScanner:
 
     def purgeStartTimer ( self ):
         # check if there are beacons to purge every x seconds
-        threading.Timer(1, self.purgeStartTimer).start()
-        try:
-            beaconDict = self.sensorStore.purge(self.beaconThreshold)
-            self.beaconsQueue.put(beaconDict)
-        except ValueError as err:
-            pass
+        if not self.threadStopEvent.is_set():
+            threading.Timer(1, self.purgeStartTimer).start()
+            try:
+                beaconDict = self.sensorStore.purge(self.beaconThreshold)
+                self.beaconsQueue.put(beaconDict)
+            except ValueError as err:
+                pass
 
 
