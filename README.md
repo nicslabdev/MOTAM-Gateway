@@ -83,8 +83,6 @@ List of MOTAM beacons included in the Interactive mode:
 - Bicycle in motion.
 - Bicycle accident.
 
-> In order to facilitate development work, Interactive Scanner mode will notify with "presence: false" JSON after 3 seconds.
-
 ## Bluetooth 5 Beacon Scanner
 The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub repository.
 
