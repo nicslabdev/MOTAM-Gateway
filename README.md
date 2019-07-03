@@ -91,7 +91,7 @@ The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub reposi
 > [**MOTAM Scanner repository on GitHub.**](https://github.com/nicslabdev/MOTAM-Scanner)
 
 ## Changelog
-### Version 3.0 (alpha)
+### Version 3.0
 - Major change: Renamed script to startGateway.py. Now, this is the main script that runs all the MOTAM Gateway functionalities.
 - Added function for receiving data from socket. This will be used for receiving MOTAM user picture sent by AVATAR.
 - Added interactive simulated BLE scanner. In this mode, you can simulate in real time the capture of predefined MOTAM beacons. It's possible to change the location of the simulated MOTAM beacons.
@@ -117,3 +117,7 @@ The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub reposi
 - Added Transport Layer Security (TLS) to connection between gateway and smartphone.
 ### Version 1.0
 First version of simulation script.
+
+## To Do list
+- Integrate load session simulation code.
+- Integrate BLE5 real scanner.

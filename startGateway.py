@@ -63,6 +63,9 @@ ble5Beacons = False
 # BLE interactive beacons generated from terminal in real time
 interactiveBeacons = False
 
+# Seconds after the beacon will be removed from list (beacon is not in range)
+beaconThreshold = 1
+
 # Coordinates given by terminal of BLE interactive beacons
 interactiveBeaconsCoord = None
 
@@ -75,9 +78,6 @@ gatewayIP = "192.168.0.1"
 # gateway port in AVATAR-Gateway connection
 gatewayPort = 4443
 
-# queue where thread will put parsed simulation database data
-# dbParsedQueue = queue.Queue()
-
 # queue where thread will put data (dictionary) from sensors or interactive simulation
 beaconsQueue = queue.Queue()
 
@@ -85,11 +85,10 @@ beaconsQueue = queue.Queue()
 # ==== Main execution ====
 
 def main():
-
     global sessionPath
     ble4Thread = None
     bleInteractiveThread = None
-    dbReaderThread = None
+    receiveFromSocketThread = None
 
     # threading event used for closing safely the threads when interrupt signal is received
     threadStopEvent = threading.Event()
@@ -102,6 +101,7 @@ def main():
 
      # start thread for reading data received from socket (like user image)
     receiveFromSocketThread = threading.Thread(target=receiveFromSocket, args=(threadStopEvent, sock))
+    receiveFromSocketThread.daemon = True
     receiveFromSocketThread.start()
 
     if (simulatedObdGps):
@@ -114,19 +114,20 @@ def main():
         # dbReaderThread = threading.Thread(target=gpsSim.dbReader, args=(dbReaderThreadStop,))
         # dbReaderThread.start()
 
-    if (ble4Beacons and not simulatedBeacons ):
-        ble4Scanner = in_Ble4Scanner.Ble4Scanner (beaconsQueue)
+    if (ble4Beacons and not simulatedBeacons and not interactiveBeacons ):
+        ble4Scanner = in_Ble4Scanner.Ble4Scanner (threadStopEvent, beaconsQueue, beaconThreshold)
         ble4Thread = ble4Scanner.run()
 
-    if (ble5Beacons and not simulatedBeacons ):
+    if (ble5Beacons and not simulatedBeacons and not interactiveBeacons ):
         pass
 
     if (interactiveBeacons and not simulatedBeacons and not ble4Beacons and not ble5Beacons):
-        bleInteractive = in_InteractiveScanner.InteractiveScanner (threadStopEvent, beaconsQueue, interactiveBeaconsCoord)
+        bleInteractive = in_InteractiveScanner.InteractiveScanner (threadStopEvent, beaconsQueue, beaconThreshold, interactiveBeaconsCoord)
         bleInteractiveThread = bleInteractive.run()
 
     # start thread that parse and send by socket the collected data
     sendDataToAvatarThread = threading.Thread(target=sendDataToAvatar, args=(threadStopEvent, sock))
+    sendDataToAvatarThread.daemon = True
     sendDataToAvatarThread.start()
 
     try:
@@ -136,16 +137,17 @@ def main():
             bleInteractiveThread.join()
         if sendDataToAvatarThread != None:
             sendDataToAvatarThread.join()
-        # dbReaderThread.join()
+        if receiveFromSocketThread != None:
+            receiveFromSocketThread.join()
 
     # finishing the execution with Ctrl + c 
     except KeyboardInterrupt:
         threadStopEvent.set()
+        
     
     # unknown exception from nobody knows where
     except Exception as error:
         print ("\r\nUnknown error\r\n ", error)
-
 
 # manage command line interface arguments
 def setUpArgParser ( ):
@@ -154,7 +156,6 @@ def setUpArgParser ( ):
     global certPath
     global keyCertPath
     global caCertPath
-    # global readStep
     global gatewayIP
     global simulatedObdGps
     global simulatedBeacons
@@ -176,7 +177,6 @@ def setUpArgParser ( ):
     argParser.add_argument("-l", "--load", help="Loads a specific session database. You have to specify the database file. The file must be on session folder. By default, the script loads a saved session trip.")
     argParser.add_argument("-c", "--cert", help="Loads a specific gateway certificate. By default, the script loads certificate for normal vehicle. The certificate file must be on cetificates folder.")
     argParser.add_argument("-C", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on certificates folder.")
-    # argParser.add_argument("-s", "--step", help="Frequency of frame transmissions from Gateway to AVATAR in seconds. By default, "+str(readStep)+" seconds.", type=float)
     argParser.add_argument("-a", "--address", help="MOTAM Gateway IP address. By default, 192.168.0.1", type=str)
     argParser.add_argument("-r", "--real_obd_gps", help="Use OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB.", action='store_true')
     argParser.add_argument("-b", "--real_ble4", help="Uses Bluetooth 4 RPi receiver for capturing road beacons", action='store_true')
@@ -196,9 +196,6 @@ def setUpArgParser ( ):
 
     if args.ca:
         caCertPath = certRoute+args.ca
-
-    # if args.step:
-    #     readStep = args.step
 
     if args.address:
         gatewayIP = args.address
@@ -275,7 +272,7 @@ def createSslSocket ( ):
         exit()
 
 
-# Receives an image from AVATAR by socket and store it 
+# Receives an image (or other data) from AVATAR by socket and store it 
 def receiveFromSocket (threadStopEvent, sock):
 
     global dumpFile
@@ -286,6 +283,7 @@ def receiveFromSocket (threadStopEvent, sock):
 
     dumpFile.close()
 
+# Reads data from socket and dumps it if the flag is activated
 def readFromSocket (sock):
 
     global dumpFile
