@@ -38,8 +38,8 @@ localityName_default	= Malaga
 organizationName		= Organización
 organizationName_default	= MOTAM
 
-organizationalUnitName		= Tipo de vehículo (normal, emergencia o lento)
-organizationalUnitName_default	= normal
+organizationalUnitName		= Tipo de vehículo (normal=0, emergencia=1 o lento=2)
+organizationalUnitName_default	= 0
 
 commonName			= Matrícula (0000AAA)
 commonName_max			= 64
@@ -53,4 +53,8 @@ emailAddress_max		= 64
 
 basicConstraints = CA:FALSE
 keyUsage = nonRepudiation, digitalSignature, keyEncipherment
-subjectAltName = IP:192.168.0.1
+subjectAltName = @alt_names
+
+[ alt_names]
+
+IP.1 = 192.168.0.1
