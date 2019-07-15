@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Jul 02, 2019.           #
+# Created by Manuel Montenegro, Jul 07, 2019.           #
 #########################################################
 
 
@@ -18,6 +18,7 @@ import socket
 import ssl
 
 from modules import in_Ble4Scanner
+from modules import in_Ble5Scanner
 from modules import in_InteractiveScanner
 # from modules import motam_simulation as simulation
 
@@ -25,7 +26,28 @@ from modules import in_InteractiveScanner
 # ==== Global variables ====
 
 # Version of this script
-scriptVersion = 3.0
+scriptVersion = 3.1
+
+# OBD II and GPS data can be loaded from DB
+simulatedObdGps = False
+
+# OBD II and GPS is connected: read from hardware interface
+obdGps = False
+
+# Bluetooth beacons can be loaded from session DB
+simulatedBeacons = False
+
+# Bluetooth 4 beacons can be real (RPi Bluetooth interface)
+ble4Beacons = False
+
+# Bluetooth 5 beacons can be real (nRF52840 dongle)
+ble5Beacons = False
+
+# BLE interactive beacons generated from terminal in real time
+interactiveBeacons = False
+
+# Coordinates given by terminal of BLE interactive beacons
+interactiveBeaconsCoord = None
 
 # path of session database file
 sessionRoute = "simulation/sessions/"
@@ -48,26 +70,8 @@ dumpFile = None
 # time lapse between frame transmissions from Gateway to AVATAR in seconds
 # readStep = 1
 
-# OBD II and GPS data can be loaded from DB or read from hardware interface
-simulatedObdGps = True
-
-# Bluetooth beacons can be loaded from DB or read from hardware
-simulatedBeacons = True
-
-# Bluetooth 4 beacons can be real (RPi Bluetooth interface)
-ble4Beacons = False
-
-# Bluetooth 5 beacons can be real (nRF52840 dongle)
-ble5Beacons = False
-
-# BLE interactive beacons generated from terminal in real time
-interactiveBeacons = False
-
 # Seconds after the beacon will be removed from list (beacon is not in range)
 beaconThreshold = 1
-
-# Coordinates given by terminal of BLE interactive beacons
-interactiveBeaconsCoord = None
 
 # Dump client data received from socket to client.log
 dump = False
@@ -87,6 +91,7 @@ beaconsQueue = queue.Queue()
 def main():
     global sessionPath
     ble4Thread = None
+    ble5Thread = None
     bleInteractiveThread = None
     receiveFromSocketThread = None
 
@@ -99,7 +104,7 @@ def main():
     # create SSL socket for communication with AVATAR
     sock = createSslSocket ()
 
-     # start thread for reading data received from socket (like user image)
+    # start thread for reading data received from socket (like user image)
     receiveFromSocketThread = threading.Thread(target=receiveFromSocket, args=(threadStopEvent, sock))
     receiveFromSocketThread.daemon = True
     receiveFromSocketThread.start()
@@ -114,16 +119,18 @@ def main():
         # dbReaderThread = threading.Thread(target=gpsSim.dbReader, args=(dbReaderThreadStop,))
         # dbReaderThread.start()
 
-    if (ble4Beacons and not simulatedBeacons and not interactiveBeacons ):
+    if (ble4Beacons):
         ble4Scanner = in_Ble4Scanner.Ble4Scanner (threadStopEvent, beaconsQueue, beaconThreshold)
         ble4Thread = ble4Scanner.run()
 
-    if (ble5Beacons and not simulatedBeacons and not interactiveBeacons ):
-        pass
+    if (ble5Beacons):
+        ble5Scanner = in_Ble5Scanner.Ble5Scanner (threadStopEvent, beaconsQueue, beaconThreshold)
+        ble5Thread = ble5Scanner.run()
 
-    if (interactiveBeacons and not simulatedBeacons and not ble4Beacons and not ble5Beacons):
+    if (interactiveBeacons):
         bleInteractive = in_InteractiveScanner.InteractiveScanner (threadStopEvent, beaconsQueue, beaconThreshold, interactiveBeaconsCoord)
         bleInteractiveThread = bleInteractive.run()
+
 
     # start thread that parse and send by socket the collected data
     sendDataToAvatarThread = threading.Thread(target=sendDataToAvatar, args=(threadStopEvent, sock))
@@ -133,6 +140,8 @@ def main():
     try:
         if ble4Thread != None:
             ble4Thread.join()
+        if ble5Thread != None:
+            ble5Thread.join()
         if bleInteractiveThread != None:
             bleInteractiveThread.join()
         if sendDataToAvatarThread != None:
