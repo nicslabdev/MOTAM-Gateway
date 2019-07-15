@@ -20,22 +20,25 @@ class InteractiveScanner:
         self.beaconThreshold = beaconThreshold                          # Seconds after the beacon will be removed from list
         
         self.dataBeaconSamples = {
-            1: ("Sillita sentado sin abrochar", "0001000200030004040100"),
-            2: ("Sillita sentado abrochado", "0001000200030004040101"),
-            3: ("Sillita sin sentar no abrochado", "0001000200030004040000"),
-            4: ("Semáforo normal rojo", "4212DDEDC09004EC01000118000A"),
-            5: ("Semáforo normal ambar", "4212DDEDC09004EC01010118000A"),
-            6: ("Semáforo normal verde", "4212DDEDC09004EC01020118000A"),
-            7: ("Carretera seca", "4212DD69C08FF4690201"),
-            8: ("Carretera mojada", "4212DD69C08FF4690202"),
-            9: ("Carretera nieve", "4212DD69C08FF4690203"),
-            10: ("Bicicleta en movimiento", "00010002000300040302"),
-            11: ("Bicicleta accidentada", "00010002000300040303")
-            # 14: {"infoPanel Incendio": "01"},
-            # 15: {"infoPanel Carrera ciclista": "01"},
-            # 16: {"Peatón cerca": "01"},
-            # 17: {"Vehículo lento": "01"},
-            # 18: {"Vehículo de emergencia": "01"}
+            1: ("Sillita sentado sin abrochar", "0400010002000300040100"),
+            2: ("Sillita sentado abrochado", "0400010002000300040101"),
+            3: ("Sillita sin sentar no abrochado", "0400010002000300040000"),
+            4: ("Semáforo normal rojo",  "014212DDEDC09004EC0118000A00"),
+            5: ("Semáforo normal ambar", "014212DDEDC09004EC0118000A01"),
+            6: ("Semáforo normal verde", "014212DDEDC09004EC0118000A02"),
+            7: ("Semáforo int rojo 16s",  "054212dd41c08fee72010e005a0010"),
+            8: ("Semáforo int ambar 5s",  "054212dd41c08fee72010e005a0105"),
+            9: ("Semáforo int verde 29s",  "054212dd41c08fee72010e005a02s1D"),
+            10: ("Carretera seca", "024212DD69C08FF46901"),
+            11: ("Carretera mojada", "024212DD69C08FF46902"),
+            12: ("Carretera nieve", "024212DD69C08FF46903"),
+            13: ("Bicicleta en movimiento", "03000100020003000402"),
+            14: ("Bicicleta accidentada", "03000100020003000403")
+            # 14: ("infoPanel Incendio", "01"),
+            # 15: ("infoPanel Carrera ciclista", "01"),
+            # 16: ("Peatón cerca", "01"),
+            # 17: ("Vehículo lento", "01"),
+            # 18: ("Vehículo de emergencia", "01")
         }
 
         # Check if new coordinates has been given
@@ -71,15 +74,12 @@ class InteractiveScanner:
             except ValueError as err:
                 pass
 
-
     def purgeStartTimer ( self ):
         # check if there are beacons to purge every x seconds
         if not self.threadStopEvent.is_set():
-            threading.Timer(1, self.purgeStartTimer).start()
+            threading.Timer(0.1, self.purgeStartTimer).start()
             try:
                 beaconDict = self.sensorStore.purge(self.beaconThreshold)
                 self.beaconsQueue.put(beaconDict)
             except ValueError as err:
                 pass
-
-

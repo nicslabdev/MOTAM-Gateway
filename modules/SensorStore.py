@@ -63,7 +63,6 @@ class SensorStore:
             self.sensorList[beaconId]={"time": time.time(), "payload": blePayload}
             # generates a presence True Dict (new beacon)
             sensorDict = {"sensors":[self.beaconDataToDict(blePayload, True)]}
-
             return sensorDict
 
     # Check if some beacon info is timed out. This will return "sensors" dictionary
@@ -75,10 +74,10 @@ class SensorStore:
         for beaconId in self.sensorList.keys():
             if (time.time()-self.sensorList[beaconId]["time"] > beaconThreshold):
                 beaconIdRemoveList.append (beaconId)
-        
+
         # if there are elements to remove...
         if len(beaconIdRemoveList) > 0:
-            # generates a presence False Dict (old beacon)
+            # generates a presence False Dict (outdated beacon)
             sensorDict = self.beaconIdListToDict (beaconIdRemoveList, False)
             return sensorDict
 
@@ -91,7 +90,6 @@ class SensorStore:
     def beaconIdListToDict ( self, beaconIdList, presence ):
 
         beaconDataParsed = {"sensors":[]}
-
         for beaconId in beaconIdList:
             beaconData = self.sensorList[beaconId]["payload"]
             beaconDataParsed["sensors"].append (self.beaconDataToDict(beaconData, presence))
@@ -105,32 +103,32 @@ class SensorStore:
 
         beaconDataParsed = {}
 
-        beaconType = int(beaconData[16:18])
+        beaconType = int(beaconData[0:2],16)
 
         if beaconType == self.beaconTypeIdentifiers["trafficSignBeaconId"]:
             beaconDataParsed["presence"] = presence
             beaconDataParsed["type"] = beaconType
-            beaconDataParsed["lat"] = struct.unpack('!f',bytes.fromhex(beaconData[0:8]))[0]
-            beaconDataParsed["lon"] = struct.unpack('!f',bytes.fromhex(beaconData[8:16]))[0]
-            beaconDataParsed["id"] = beaconData[0:8]+beaconData[8:16]
+            beaconDataParsed["lat"] = struct.unpack('!f',bytes.fromhex(beaconData[2:10]))[0]
+            beaconDataParsed["lon"] = struct.unpack('!f',bytes.fromhex(beaconData[10:18]))[0]
+            beaconDataParsed["id"] = beaconData[0:18]
             beaconDataParsed["specificData"] = {}
-            beaconDataParsed["specificData"]["trafficSign"] = int(beaconData[18:20])
+            beaconDataParsed["specificData"]["trafficSign"] = int(beaconData[26:28],16)
         
         elif beaconType == self.beaconTypeIdentifiers["roadStateBeaconId"]:
             beaconDataParsed["presence"] = presence
             beaconDataParsed["type"] = beaconType
-            beaconDataParsed["lat"] = struct.unpack('!f',bytes.fromhex(beaconData[0:8]))[0]
-            beaconDataParsed["lon"] = struct.unpack('!f',bytes.fromhex(beaconData[8:16]))[0]
-            beaconDataParsed["id"] = beaconData[0:8]+beaconData[8:16]
+            beaconDataParsed["lat"] = struct.unpack('!f',bytes.fromhex(beaconData[2:10]))[0]
+            beaconDataParsed["lon"] = struct.unpack('!f',bytes.fromhex(beaconData[10:18]))[0]
+            beaconDataParsed["id"] = beaconData[0:18]
             beaconDataParsed["specificData"] = {}
-            beaconDataParsed["specificData"]["roadState"] = int(beaconData[18:20])
+            beaconDataParsed["specificData"]["roadState"] = int(beaconData[18:20],16)
 
         elif beaconType == self.beaconTypeIdentifiers["bicycleBeaconId"]:
             beaconDataParsed["presence"] = presence
             beaconDataParsed["type"] = beaconType
             beaconDataParsed["lat"] = None
             beaconDataParsed["lon"] = None
-            beaconDataParsed["id"] = beaconData[0:8]+beaconData[8:16]
+            beaconDataParsed["id"] = beaconData[0:18]
             beaconDataParsed["specificData"] = {}
             beaconDataParsed["specificData"]["bicycleState"] = int(beaconData[18:20])
 
@@ -139,13 +137,21 @@ class SensorStore:
             beaconDataParsed["type"] = beaconType
             beaconDataParsed["lat"] = None
             beaconDataParsed["lon"] = None
-            beaconDataParsed["id"] = beaconData[0:8]+beaconData[8:16]
+            beaconDataParsed["id"] = beaconData[0:18]
             beaconDataParsed["specificData"] = {}
-            beaconDataParsed["specificData"]["kidPresence"] = int(beaconData[18:20])
-            beaconDataParsed["specificData"]["lockState"] = int(beaconData[20:22])
+            beaconDataParsed["specificData"]["kidPresence"] = int(beaconData[18:20],16)
+            beaconDataParsed["specificData"]["lockState"] = int(beaconData[20:22],16)
 
         elif beaconType == self.beaconTypeIdentifiers["intelligentTrafficLightBeaconId"]:
-            print ("intelligentTraffic")
+            beaconDataParsed["presence"] = presence
+            beaconDataParsed["type"] = beaconType
+            beaconDataParsed["lat"] = struct.unpack('!f',bytes.fromhex(beaconData[2:10]))[0]
+            beaconDataParsed["lon"] = struct.unpack('!f',bytes.fromhex(beaconData[10:18]))[0]
+            beaconDataParsed["id"] = beaconData[0:18]
+            beaconDataParsed["specificData"] = {}
+            beaconDataParsed["specificData"]["trafficLightState"] = int(beaconData[26:28], 16)
+            beaconDataParsed["specificData"]["timeRemaining"] = int(beaconData[28:30], 16)
+
         elif beaconType == self.beaconTypeIdentifiers["infoPanelBeaconId"]:
             print ("infoPanel")
         elif beaconType == self.beaconTypeIdentifiers["pedestrianBeaconId"]:
