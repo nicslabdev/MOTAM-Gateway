@@ -25,7 +25,7 @@ class Ble5Scanner:
         usbDevices = subprocess.check_output('util/usbDiscovery.sh').decode("utf-8").rstrip()
         for line in usbDevices.split('\n'):
             device = line.split('-')
-            if device[0] == '0000':
+            if device[0] == 'Extended_Advertisements_Scanner' and '/dev/ttyACM' in device[1]:
                 self.scannerPath = device[1]
 
     def run ( self ):
