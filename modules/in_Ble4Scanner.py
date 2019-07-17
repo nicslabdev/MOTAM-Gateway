@@ -56,22 +56,3 @@ class Ble4Scanner:
                             self.beaconsQueue.put(beaconDict)
                         except ValueError as err:
                             pass
-
-
-# class ScanDelegate(DefaultDelegate):
-#     def __init__(self, motamBeaconBle4Id, beaconsQueue, sensorStore):
-#         DefaultDelegate.__init__(self)
-#         self.motamBeaconBle4Id = motamBeaconBle4Id
-#         self.beaconsQueue = beaconsQueue
-#         self.sensorStore = sensorStore
-
-#     def handleDiscovery(self, dev, isNewDev, isNewData):
-#         for (adtype, desc, val) in dev.getScanData():
-#             # advertising type must be 0xFF and length larger than 4 bytes
-#             if ( (adtype==0xFF) and (len(val)>=4) ):
-#                 if (val[0:4] == self.motamBeaconBle4Id):
-#                     try:
-#                         beaconDict = self.sensorStore.add(val[4:])
-#                         self.beaconsQueue.put(beaconDict)
-#                     except ValueError as err:
-#                         pass
