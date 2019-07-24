@@ -27,25 +27,22 @@ from modules import in_InteractiveScanner
 # ==== Global variables ====
 
 # Version of this script
-scriptVersion = 3.1
+scriptVersion = 3.2
 
 # OBD II and GPS data can be loaded from DB
 simulatedObdGps = False
-
 # OBD II and GPS is connected: read from hardware interface
 obdGps = False
-
 # Bluetooth beacons can be loaded from session DB
 simulatedBeacons = False
-
 # Bluetooth 4 beacons can be real (RPi Bluetooth interface)
 ble4Beacons = False
-
 # Bluetooth 5 beacons can be real (nRF52840 dongle)
 ble5Beacons = False
-
 # BLE interactive beacons generated from terminal in real time
 interactiveBeacons = False
+# Camera capture of the driver
+camera = False
 
 # Coordinates given by terminal of BLE interactive beacons
 interactiveBeaconsCoord = None
@@ -64,6 +61,9 @@ caCertPath = certRoute+"cacert.crt"
 
 # path of client.log file (will contain the data received from socket)
 clientLogPath = "client.log"
+
+# path of camera shots
+shotsRoute = "shots/"
 
 # file handler for logging the receiving data from socket
 dumpFile = None
@@ -138,6 +138,13 @@ def main():
         bleInteractive = in_InteractiveScanner.InteractiveScanner (threadStopEvent, beaconsQueue, beaconThreshold, interactiveBeaconsCoord)
         bleInteractiveThread = bleInteractive.run()
 
+    # start thread for taking shots of the driver every x seconds
+    if camera:
+        user = "user1"
+        filePath = shotsRoute + user + "-%d.jpg"
+        #ToDo: exit when ctrl+c
+        subprocess.run(["raspistill", "-t", "0", "-tl", "30000", "-rot", "180", "-ts", "-o", filePath, "-n" ])
+        
 
     # start thread that parse and send by socket the collected data
     sendDataToAvatarThread = threading.Thread(target=sendDataToAvatar, args=(threadStopEvent, sock))
@@ -187,9 +194,10 @@ def setUpArgParser ( ):
     global dump
     global dumpFile
     global clientLogPath
+    global camera
 
     # description of the script shown in command line
-    scriptDescription = 'This is the main script of MOTAM Gateway'
+    scriptDescription = 'This is the main script of MOTAM Gateway. By default, this starts a Wifi Direct connection'
 
     # initiate the arguments parser
     argParser = argparse.ArgumentParser(description = scriptDescription)
@@ -198,13 +206,14 @@ def setUpArgParser ( ):
     argParser.add_argument("-l", "--load", help="Loads a specific session database. You have to specify the database file. The file must be on session folder. By default, the script loads a saved session trip.")
     argParser.add_argument("-c", "--cert", help="Loads a specific gateway certificate. By default, the script loads certificate for normal vehicle. The certificate file must be on cetificates folder.")
     argParser.add_argument("-C", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on certificates folder.")
-    argParser.add_argument("-a", "--address", help="Disable Wifi-Direct and open socket on selected IP ", type=str)
-    argParser.add_argument("-r", "--real_obd_gps", help="Use OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB.", action='store_true')
+    argParser.add_argument("-a", "--address", help="Disables Wifi-Direct and open socket on selected IP ", type=str)
+    argParser.add_argument("-r", "--real_obd_gps", help="Uses OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB.", action='store_true')
     argParser.add_argument("-b", "--real_ble4", help="Uses Bluetooth 4 RPi receiver for capturing road beacons", action='store_true')
-    argParser.add_argument("-B", "--real_ble5", help="Use nRF52840 dongle for capturing BLE5 beacons.", action='store_true')
-    argParser.add_argument("-i", "--interactive", help="Simulate BLE scanner in real time from terminal input. You can use only '--interactive' (default coordinates) '--interactive 36.778 -4.234' ", nargs='*', type=float)
+    argParser.add_argument("-B", "--real_ble5", help="Uses nRF52840 dongle for capturing BLE5 beacons.", action='store_true')
+    argParser.add_argument("-i", "--interactive", help="Simulates BLE scanner in real time from terminal input. You can use only '--interactive' (default coordinates) '--interactive 36.778 -4.234' ", nargs='*', type=float)
     argParser.add_argument("-d", "--dump", help="Dumps client messages to client.log.", action='store_true')
-    argParser.add_argument("-v", "--version", help="Show script version", action="store_true")
+    argParser.add_argument("-s", "--shots", help="Starts camera and start taking pictures of the driver", action="store_true")
+    argParser.add_argument("-v", "--version", help="Shows script version", action="store_true")
 
     args = argParser.parse_args ()
 
@@ -241,6 +250,9 @@ def setUpArgParser ( ):
         # this will start a new thread that will write in a file all the data received from AVATAR
         dump = True
         dumpFile = open(clientLogPath, "w")
+
+    if args.shots:
+        camera = True
 
     if args.version:
         print ("MOTAM Simulation script version: ", scriptVersion)

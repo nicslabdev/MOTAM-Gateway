@@ -89,6 +89,10 @@ The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub reposi
 > [**MOTAM Scanner repository on GitHub.**](https://github.com/nicslabdev/MOTAM-Scanner)
 
 ## Changelog
+### Version 3.2
+- Integrated Raspberry Pi Camera module
+- Added script argument for taking pictures of driver
+
 ### Version 3.1
 - Integrated Wifi-Direct connection scripts to main Python script.
 - Script adaptation to new Raspbian: Buster.
