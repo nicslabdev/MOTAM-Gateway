@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Jul 07, 2019.           #
+# Created by Manuel Montenegro, Jul 24, 2019.           #
 #########################################################
 
 
@@ -16,6 +16,7 @@ import queue
 import json
 import socket
 import ssl
+import subprocess
 
 from modules import in_Ble4Scanner
 from modules import in_Ble5Scanner
@@ -101,13 +102,19 @@ def main():
     # capture command line arguments
     setUpArgParser()
 
+    if gatewayIP == "192.168.0.1":
+        subprocess.run(["wpa_cli", "-i", "p2p-dev-wlan0", "p2p_find"], capture_output=True)
+        subprocess.run(["wpa_cli", "-i", "p2p-dev-wlan0", "p2p_group_add"], capture_output=True)
+        subprocess.run("wpa_cli -i $(ip -br link | grep -Po 'p2p-wlan0-\d+') wps_pin any 12345670", shell=True, capture_output=True)
+
     # create SSL socket for communication with AVATAR
     sock = createSslSocket ()
 
     # start thread for reading data received from socket (like user image)
-    receiveFromSocketThread = threading.Thread(target=receiveFromSocket, args=(threadStopEvent, sock))
-    receiveFromSocketThread.daemon = True
-    receiveFromSocketThread.start()
+    if dump:
+        receiveFromSocketThread = threading.Thread(target=receiveFromSocket, args=(threadStopEvent, sock))
+        receiveFromSocketThread.daemon = True
+        receiveFromSocketThread.start()
 
     if (simulatedObdGps):
         pass
@@ -153,10 +160,15 @@ def main():
     except KeyboardInterrupt:
         threadStopEvent.set()
         
-    
     # unknown exception from nobody knows where
     except Exception as error:
         print ("\r\nUnknown error\r\n ", error)
+
+    finally:
+        # Close Wifi-Direct connection
+        if gatewayIP == "192.168.0.1":
+            subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\d+')", shell=True, capture_output=True)
+        
 
 # manage command line interface arguments
 def setUpArgParser ( ):
@@ -186,7 +198,7 @@ def setUpArgParser ( ):
     argParser.add_argument("-l", "--load", help="Loads a specific session database. You have to specify the database file. The file must be on session folder. By default, the script loads a saved session trip.")
     argParser.add_argument("-c", "--cert", help="Loads a specific gateway certificate. By default, the script loads certificate for normal vehicle. The certificate file must be on cetificates folder.")
     argParser.add_argument("-C", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on certificates folder.")
-    argParser.add_argument("-a", "--address", help="MOTAM Gateway IP address. By default, 192.168.0.1", type=str)
+    argParser.add_argument("-a", "--address", help="Disable Wifi-Direct and open socket on selected IP ", type=str)
     argParser.add_argument("-r", "--real_obd_gps", help="Use OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB.", action='store_true')
     argParser.add_argument("-b", "--real_ble4", help="Uses Bluetooth 4 RPi receiver for capturing road beacons", action='store_true')
     argParser.add_argument("-B", "--real_ble5", help="Use nRF52840 dongle for capturing BLE5 beacons.", action='store_true')
@@ -220,7 +232,6 @@ def setUpArgParser ( ):
         simulatedBeacons = False
         ble5Beacons = True
 
-
     if args.interactive is not None and len(args.interactive) in (0,2):
         simulatedBeacons = False
         interactiveBeacons = True
@@ -247,7 +258,11 @@ def createSslSocket ( ):
         # Certificate Authority
         SSLcontext.load_verify_locations(caCertPath)
         # certificates are required from the other side of the socket connection
-        SSLcontext.verify_mode = ssl.CERT_REQUIRED
+        SSLcontext.verify_mode = ssl.CERT_NONE
+        # check_hostname to True will require certificate
+        SSLcontext.check_hostname = False
+        
+        
 
         # create secure socket for data transmission
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -268,16 +283,19 @@ def createSslSocket ( ):
         return sslSockConnection
 
 
-    except ssl.SSLError:
-        print('Private key doesnt match with the certificate\r\n')
+    except ssl.SSLError as err:
+        print (err)
+        subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\d+')", shell=True, capture_output=True)
         exit()
 
     # if the other side close the socket...
     except socket.error:
         print("Connection Closed")
+        subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\d+')", shell=True, capture_output=True)
         exit()
 
     except KeyboardInterrupt:
+        subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\d+')", shell=True, capture_output=True)
         exit()
 
 
@@ -301,7 +319,10 @@ def readFromSocket (sock):
     dataRead = sock.recv(1024)
 
     if dump:
+        # dumpFile.write(str(time.time()))
+        # dumpFile.write ("\r\n")
         dumpFile.write (dataRead.decode("utf-8"))
+        # dumpFile.write ("\r\n\r\n\r\n")
         dumpFile.flush()
 
     return dataRead
