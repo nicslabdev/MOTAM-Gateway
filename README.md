@@ -89,6 +89,13 @@ The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub reposi
 > [**MOTAM Scanner repository on GitHub.**](https://github.com/nicslabdev/MOTAM-Scanner)
 
 ## Changelog
+### Version 3.1
+- Integrated Wifi-Direct connection scripts to main Python script.
+- Script adaptation to new Raspbian: Buster.
+- Updated frame formats: certificates id 0, 1 and 2.
+- Updated frame formats: Presence field on AVATAR JSON to true or false.
+- Added new beacons frame examples on interactive mode.
+
 ### Version 3.0
 - Major change: Renamed script to startGateway.py. Now, this is the main script that runs all the MOTAM Gateway functionalities.
 - Added function for receiving data from socket. This will be used for receiving MOTAM user picture sent by AVATAR.
