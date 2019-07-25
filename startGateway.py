@@ -4,10 +4,11 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Jul 24, 2019.           #
+# Created by Manuel Montenegro, Jul 25, 2019.           #
 #########################################################
 
 
+import os
 import time
 import argparse
 import threading
@@ -95,6 +96,7 @@ def main():
     ble5Thread = None
     bleInteractiveThread = None
     receiveFromSocketThread = None
+    cameraTimer = None
 
     # threading event used for closing safely the threads when interrupt signal is received
     threadStopEvent = threading.Event()
@@ -141,10 +143,14 @@ def main():
     # start thread for taking shots of the driver every x seconds
     if camera:
         user = "user1"
-        filePath = shotsRoute + user + "-%d.jpg"
-        #ToDo: exit when ctrl+c
-        subprocess.run(["raspistill", "-t", "0", "-tl", "30000", "-rot", "180", "-ts", "-o", filePath, "-n" ])
-        
+        path = shotsRoute + user
+        filePath = path + "/%d.jpg"
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        # take picture every 30 seconds
+        cameraTimer = threading.Timer(30, takePictureStartTimer, [threadStopEvent, filePath])
 
     # start thread that parse and send by socket the collected data
     sendDataToAvatarThread = threading.Thread(target=sendDataToAvatar, args=(threadStopEvent, sock))
@@ -166,7 +172,8 @@ def main():
     # finishing the execution with Ctrl + c 
     except KeyboardInterrupt:
         threadStopEvent.set()
-        
+
+
     # unknown exception from nobody knows where
     except Exception as error:
         print ("\r\nUnknown error\r\n ", error)
@@ -175,88 +182,6 @@ def main():
         # Close Wifi-Direct connection
         if gatewayIP == "192.168.0.1":
             subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\d+')", shell=True, capture_output=True)
-        
-
-# manage command line interface arguments
-def setUpArgParser ( ):
-
-    global sessionPath
-    global certPath
-    global keyCertPath
-    global caCertPath
-    global gatewayIP
-    global simulatedObdGps
-    global simulatedBeacons
-    global interactiveBeacons
-    global interactiveBeaconsCoord
-    global ble4Beacons
-    global ble5Beacons
-    global dump
-    global dumpFile
-    global clientLogPath
-    global camera
-
-    # description of the script shown in command line
-    scriptDescription = 'This is the main script of MOTAM Gateway. By default, this starts a Wifi Direct connection'
-
-    # initiate the arguments parser
-    argParser = argparse.ArgumentParser(description = scriptDescription)
-
-    # command line arguments
-    argParser.add_argument("-l", "--load", help="Loads a specific session database. You have to specify the database file. The file must be on session folder. By default, the script loads a saved session trip.")
-    argParser.add_argument("-c", "--cert", help="Loads a specific gateway certificate. By default, the script loads certificate for normal vehicle. The certificate file must be on cetificates folder.")
-    argParser.add_argument("-C", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on certificates folder.")
-    argParser.add_argument("-a", "--address", help="Disables Wifi-Direct and open socket on selected IP ", type=str)
-    argParser.add_argument("-r", "--real_obd_gps", help="Uses OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB.", action='store_true')
-    argParser.add_argument("-b", "--real_ble4", help="Uses Bluetooth 4 RPi receiver for capturing road beacons", action='store_true')
-    argParser.add_argument("-B", "--real_ble5", help="Uses nRF52840 dongle for capturing BLE5 beacons.", action='store_true')
-    argParser.add_argument("-i", "--interactive", help="Simulates BLE scanner in real time from terminal input. You can use only '--interactive' (default coordinates) '--interactive 36.778 -4.234' ", nargs='*', type=float)
-    argParser.add_argument("-d", "--dump", help="Dumps client messages to client.log.", action='store_true')
-    argParser.add_argument("-s", "--shots", help="Starts camera and start taking pictures of the driver", action="store_true")
-    argParser.add_argument("-v", "--version", help="Shows script version", action="store_true")
-
-    args = argParser.parse_args ()
-
-    if args.load:
-        sessionPath = sessionRoute+args.load
-
-    if args.cert:
-        certPath = certRoute + args.cert
-        keyCertPath = certRoute + args.cert.split('.')[0]+'.key'
-
-    if args.ca:
-        caCertPath = certRoute+args.ca
-
-    if args.address:
-        gatewayIP = args.address
-
-    if args.real_obd_gps:
-        simulatedObdGps = False
-
-    if args.real_ble4:
-        simulatedBeacons = False
-        ble4Beacons = True
-
-    if args.real_ble5:
-        simulatedBeacons = False
-        ble5Beacons = True
-
-    if args.interactive is not None and len(args.interactive) in (0,2):
-        simulatedBeacons = False
-        interactiveBeacons = True
-        interactiveBeaconsCoord = args.interactive
-
-    if args.dump:
-        # this will start a new thread that will write in a file all the data received from AVATAR
-        dump = True
-        dumpFile = open(clientLogPath, "w")
-
-    if args.shots:
-        camera = True
-
-    if args.version:
-        print ("MOTAM Simulation script version: ", scriptVersion)
-        exit()
 
 
 # create a SSL connection with AVATAR
@@ -270,11 +195,10 @@ def createSslSocket ( ):
         # Certificate Authority
         SSLcontext.load_verify_locations(caCertPath)
         # certificates are required from the other side of the socket connection
-        SSLcontext.verify_mode = ssl.CERT_NONE
+        # SSLcontext.verify_mode = ssl.CERT_NONE
+        SSLcontext.verify_mode = ssl.CERT_REQUIRED
         # check_hostname to True will require certificate
-        SSLcontext.check_hostname = False
-        
-        
+        # SSLcontext.check_hostname = True
 
         # create secure socket for data transmission
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -289,11 +213,13 @@ def createSslSocket ( ):
         sockConnection, clientAddress = sock.accept()
         # wrap socket with SSL layer
         sslSockConnection = SSLcontext.wrap_socket(sockConnection, server_side=True)
+        print ("Connection accepted!")
+
+        print ("Welcome: ", sslSockConnection.getpeercert() ["subject"][0][0][1])
 
         # print("SSL established. Peer: {}".format(sslSockConnection.getpeercert()))
 
         return sslSockConnection
-
 
     except ssl.SSLError as err:
         print (err)
@@ -339,7 +265,12 @@ def readFromSocket (sock):
 
     return dataRead
 
+def takePictureStartTimer (cameraTimer, threadStopEvent, filePath):
 
+    if not threadStopEvent.is_set():
+        # take picture every 30 sec
+        cameraTimer.start()
+        subprocess.run(["raspistill", "-rot", "180", "-t", "500", "-ts", "-o", filePath])
 
 
 # Read units of data from database session trip and send it to AVATAR
@@ -367,6 +298,88 @@ def sendDataToAvatar ( threadStopEvent, sock ):
         # if the other side close the socket...
         except socket.error:
             pass
+
+
+# manage command line interface arguments
+def setUpArgParser ( ):
+
+    global sessionPath
+    global certPath
+    global keyCertPath
+    global caCertPath
+    global gatewayIP
+    global simulatedObdGps
+    global simulatedBeacons
+    global interactiveBeacons
+    global interactiveBeaconsCoord
+    global ble4Beacons
+    global ble5Beacons
+    global dump
+    global dumpFile
+    global clientLogPath
+    global camera
+
+    # description of the script shown in command line
+    scriptDescription = 'This is the main script of MOTAM Gateway. By default, this starts a Wifi Direct connection'
+
+    # initiate the arguments parser
+    argParser = argparse.ArgumentParser(description = scriptDescription)
+
+    # command line arguments
+    argParser.add_argument("-l", "--load", help="Loads a specific session database. You have to specify the database file. The file must be on session folder. By default, the script loads a saved session trip.")
+    argParser.add_argument("-c", "--cert", help="Loads a specific gateway certificate. By default, the script loads certificate for normal vehicle. The certificate file must be on cetificates folder.")
+    argParser.add_argument("-C", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on certificates folder.")
+    argParser.add_argument("-a", "--address", help="Disables Wifi-Direct and open socket on selected IP ", type=str)
+    argParser.add_argument("-r", "--real_obd_gps", help="Uses OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB.", action='store_true')
+    argParser.add_argument("-b", "--real_ble4", help="Uses Bluetooth 4 RPi receiver for capturing road beacons", action='store_true')
+    argParser.add_argument("-B", "--real_ble5", help="Uses nRF52840 dongle for capturing BLE5 beacons.", action='store_true')
+    argParser.add_argument("-i", "--interactive", help="Simulates BLE scanner in real time from terminal input. You can use only '--interactive' (default coordinates) '--interactive 36.778 -4.234' ", nargs='*', type=float)
+    argParser.add_argument("-d", "--dump", help="Dumps client messages to client.log.", action='store_true')
+    argParser.add_argument("-s", "--shots", help="Starts camera and begins taking pictures of the driver", action="store_true")
+    argParser.add_argument("-v", "--version", help="Shows script version", action="store_true")
+
+    args = argParser.parse_args ()
+
+    if args.load:
+        sessionPath = sessionRoute+args.load
+
+    if args.cert:
+        certPath = certRoute + args.cert
+        keyCertPath = certRoute + args.cert.split('.')[0]+'.key'
+
+    if args.ca:
+        caCertPath = certRoute+args.ca
+
+    if args.address:
+        gatewayIP = args.address
+
+    if args.real_obd_gps:
+        simulatedObdGps = False
+
+    if args.real_ble4:
+        simulatedBeacons = False
+        ble4Beacons = True
+
+    if args.real_ble5:
+        simulatedBeacons = False
+        ble5Beacons = True
+
+    if args.interactive is not None and len(args.interactive) in (0,2):
+        simulatedBeacons = False
+        interactiveBeacons = True
+        interactiveBeaconsCoord = args.interactive
+
+    if args.dump:
+        # this will start a new thread that will write in a file all the data received from AVATAR
+        dump = True
+        dumpFile = open(clientLogPath, "w")
+
+    if args.shots:
+        camera = True
+
+    if args.version:
+        print ("MOTAM Simulation script version: ", scriptVersion)
+        exit()
 
 # start script
 if __name__ == '__main__':
