@@ -92,6 +92,7 @@ The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub reposi
 ### Version 3.2
 - Integrated Raspberry Pi Camera module
 - Added script argument for taking pictures of driver
+- User ID captured from certificate from AVATAR
 
 ### Version 3.1
 - Integrated Wifi-Direct connection scripts to main Python script.

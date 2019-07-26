@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Jul 25, 2019.           #
+# Created by Manuel Montenegro, Jul 26, 2019.           #
 #########################################################
 
 
@@ -22,7 +22,7 @@ import subprocess
 from modules import in_Ble4Scanner
 from modules import in_Ble5Scanner
 from modules import in_InteractiveScanner
-# from modules import motam_simulation as simulation
+# from modules import in_ObdGpsSim
 
 
 # ==== Global variables ====
@@ -44,6 +44,10 @@ ble5Beacons = False
 interactiveBeacons = False
 # Camera capture of the driver
 camera = False
+# Dump client data received from socket to client.log
+dump = False
+# file handler for logging the receiving data from socket
+dumpFile = None
 
 # Coordinates given by terminal of BLE interactive beacons
 interactiveBeaconsCoord = None
@@ -51,23 +55,16 @@ interactiveBeaconsCoord = None
 # path of session database file
 sessionRoute = "simulation/sessions/"
 sessionPath = sessionRoute+"UMA-5_10_17-Simulation_Beacons_v2.db"
-
 # path of certificate and its key
 certRoute = "certs/"
 certPath = certRoute+"pasarela_normal.crt"
 keyCertPath = certRoute+"pasarela_normal.key"
-
 # path of CA certificate
 caCertPath = certRoute+"cacert.crt"
-
 # path of client.log file (will contain the data received from socket)
 clientLogPath = "client.log"
-
 # path of camera shots
 shotsRoute = "shots/"
-
-# file handler for logging the receiving data from socket
-dumpFile = None
 
 # time lapse between frame transmissions from Gateway to AVATAR in seconds
 # readStep = 1
@@ -75,17 +72,24 @@ dumpFile = None
 # Seconds after the beacon will be removed from list (beacon is not in range)
 beaconThreshold = 1
 
-# Dump client data received from socket to client.log
-dump = False
-
 # ip and port assigned to the gateway in AVATAR-Gateway connection
 gatewayIP = "192.168.0.1"
 
 # gateway port in AVATAR-Gateway connection
 gatewayPort = 4443
 
+# user logged on the system from AVATAR
+user = None
+
 # queue where thread will put data (dictionary) from sensors or interactive simulation
 beaconsQueue = queue.Queue()
+
+# timer for taking photos every x seconds with RPi camera modules
+cameraTimer = None
+
+# User ID and Group ID of Pi user for managging files
+uid = 1000
+gid = 1000
 
 
 # ==== Main execution ====
@@ -96,7 +100,6 @@ def main():
     ble5Thread = None
     bleInteractiveThread = None
     receiveFromSocketThread = None
-    cameraTimer = None
 
     # threading event used for closing safely the threads when interrupt signal is received
     threadStopEvent = threading.Event()
@@ -121,7 +124,6 @@ def main():
     if (simulatedObdGps):
         pass
         # threading event used for closing safely the DataBase when interrupt signal is received
-        # dbReaderThreadStop = threading.Event()
 
         # start database reader and parser thread
         # gpsSim = simulation.GpsSim (sessionPath)
@@ -142,15 +144,18 @@ def main():
 
     # start thread for taking shots of the driver every x seconds
     if camera:
-        user = "user1"
         path = shotsRoute + user
         filePath = path + "/%d.jpg"
 
+        if not os.path.exists(shotsRoute):
+            os.makedirs(shotsRoute, 0o755)
+            os.chown(shotsRoute, uid, gid)
         if not os.path.exists(path):
-            os.makedirs(path)
+            os.makedirs(path, 0o755)
+            os.chown(path, uid, gid)
 
         # take picture every 30 seconds
-        cameraTimer = threading.Timer(30, takePictureStartTimer, [threadStopEvent, filePath])
+        takePictureStartTimer (threadStopEvent, filePath)
 
     # start thread that parse and send by socket the collected data
     sendDataToAvatarThread = threading.Thread(target=sendDataToAvatar, args=(threadStopEvent, sock))
@@ -172,7 +177,8 @@ def main():
     # finishing the execution with Ctrl + c 
     except KeyboardInterrupt:
         threadStopEvent.set()
-
+        if cameraTimer != None:
+            cameraTimer.cancel()
 
     # unknown exception from nobody knows where
     except Exception as error:
@@ -186,6 +192,9 @@ def main():
 
 # create a SSL connection with AVATAR
 def createSslSocket ( ):
+
+    global user
+
     # TLS configuration for connection
     try:
         # create the SSL context
@@ -195,8 +204,8 @@ def createSslSocket ( ):
         # Certificate Authority
         SSLcontext.load_verify_locations(caCertPath)
         # certificates are required from the other side of the socket connection
-        # SSLcontext.verify_mode = ssl.CERT_NONE
-        SSLcontext.verify_mode = ssl.CERT_REQUIRED
+        SSLcontext.verify_mode = ssl.CERT_NONE
+        # SSLcontext.verify_mode = ssl.CERT_REQUIRED
         # check_hostname to True will require certificate
         # SSLcontext.check_hostname = True
 
@@ -215,9 +224,12 @@ def createSslSocket ( ):
         sslSockConnection = SSLcontext.wrap_socket(sockConnection, server_side=True)
         print ("Connection accepted!")
 
-        print ("Welcome: ", sslSockConnection.getpeercert() ["subject"][0][0][1])
+        if SSLcontext.verify_mode == ssl.CERT_REQUIRED:
+            user = sslSockConnection.getpeercert() ["subject"][0][0][1]
+        elif SSLcontext.verify_mode == ssl.CERT_NONE:
+            user = 'anonymous'
 
-        # print("SSL established. Peer: {}".format(sslSockConnection.getpeercert()))
+        print ("Welcome: ", user)
 
         return sslSockConnection
 
@@ -265,12 +277,15 @@ def readFromSocket (sock):
 
     return dataRead
 
-def takePictureStartTimer (cameraTimer, threadStopEvent, filePath):
+def takePictureStartTimer (threadStopEvent, filePath):
+
+    global cameraTimer
 
     if not threadStopEvent.is_set():
         # take picture every 30 sec
+        cameraTimer = threading.Timer(30, takePictureStartTimer, [threadStopEvent, filePath])
         cameraTimer.start()
-        subprocess.run(["raspistill", "-rot", "180", "-t", "500", "-ts", "-o", filePath])
+        subprocess.run(["raspistill", "-rot", "180", "-t", "500", "-ts", "-o", filePath, "-n"])
 
 
 # Read units of data from database session trip and send it to AVATAR
