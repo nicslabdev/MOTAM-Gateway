@@ -38,9 +38,33 @@ For Interactive Scanner mode and custom location coordinates of beacons:
 
 	sudo python3 startGateway.py --interactive 36.715923 -4.477482
 
-For Interactive Scanner mode and logging data received from AVATAR:
+For Interactive Scanner mode and logging data received from AVATAR (just for development)
 
 	sudo python3 startGateway.py --interactive --dump
+
+For loading a OBDII and GPS session trip (default session trip):
+
+	sudo python3 startGateway.py --loadCarTrip
+
+For loading an OBDII and GPS session trip (another session trip). The session trip must be located con simulation/sessions folder:
+
+	sudo python3 startGateway.py --loadCarTrip alternativeSessionTrip.db
+
+For loading an OBDII, GPS and captured beacons session trip (default trip):
+
+	sudo python3 startGateway.py --loadCarTrip --loadBeaconsTrip
+
+For using another type of vehicle (change certificate). Available: normal, emergency and slow vehicle:
+	sudo python3 startGateway.py --cert pasarela_lento.crt
+
+For capturing real BLE4 beacons with real receiver.
+	sudo python3 startGateway.py --real_ble4
+
+For capturing real BLE5 beacons with real receiver.
+	sudo python3 startGateway.py --real_ble5
+
+Start capturing camera pictures of the driver
+	sudo python3 startGateway.py --shots
 
 
 ## Connection parameters
@@ -77,11 +101,16 @@ List of MOTAM beacons included in the Interactive mode:
 - Traffic light in red state.
 - Traffic light in yellow state.
 - Traffic light in green state.
+- Intelligent Traffic Light in red state 16 seconds left.
+- Intelligent Traffic Light in yellow state 5 seconds left.
+Intelligent Traffic Light in green state 29 seconds left.
 - Dry road.
 - Wet road.
 - Frozen road.
 - Bicycle in motion.
 - Bicycle accident.
+- Information panel "Incendio 2 Km"
+- Information panel "Carrera ciclista"
 
 ## Bluetooth 5 Beacon Scanner
 The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub repository.
