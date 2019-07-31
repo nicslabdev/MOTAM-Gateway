@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Jul 30, 2019.           #
+# Created by Manuel Montenegro, Jul 31, 2019.           #
 #########################################################
 
 
@@ -243,7 +243,7 @@ def createSslSocket ( ):
         exit()
 
 
-# Receives an image (or other data) from AVATAR by socket and store it 
+# Receives an image (or other data) from AVATAR by socket and store it
 def receiveFromSocket (threadStopEvent, sock):
 
     global dumpFile

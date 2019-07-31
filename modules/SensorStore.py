@@ -153,7 +153,14 @@ class SensorStore:
             beaconDataParsed["specificData"]["timeRemaining"] = int(beaconData[28:30], 16)
 
         elif beaconType == self.beaconTypeIdentifiers["infoPanelBeaconId"]:
-            print ("infoPanel")
+            beaconDataParsed["presence"] = presence
+            beaconDataParsed["type"] = beaconType
+            beaconDataParsed["lat"] = struct.unpack('!f',bytes.fromhex(beaconData[2:10]))[0]
+            beaconDataParsed["lon"] = struct.unpack('!f',bytes.fromhex(beaconData[10:18]))[0]
+            beaconDataParsed["id"] = beaconData[0:18]
+            beaconDataParsed["specificData"] = {}
+            beaconDataParsed["specificData"]["event"] = bytearray.fromhex(beaconData[26:]).decode()
+
         elif beaconType == self.beaconTypeIdentifiers["pedestrianBeaconId"]:
             print ("pedestrian")
         elif beaconType == self.beaconTypeIdentifiers["slowVehicleBeaconId"]:

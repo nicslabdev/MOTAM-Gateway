@@ -26,16 +26,16 @@ class InteractiveScanner:
             4: ("Semáforo normal rojo",  "014212DDEDC09004EC0118000A00"),
             5: ("Semáforo normal ambar", "014212DDEDC09004EC0118000A01"),
             6: ("Semáforo normal verde", "014212DDEDC09004EC0118000A02"),
-            7: ("Semáforo int rojo 16s",  "054212dd41c08fee72010e005a0010"),
-            8: ("Semáforo int ambar 5s",  "054212dd41c08fee72010e005a0105"),
-            9: ("Semáforo int verde 29s",  "054212dd41c08fee72010e005a02s1D"),
+            7: ("Semáforo inteligente rojo 16s",   "054212dd41c08fee72010e005a0010"),
+            8: ("Semáforo inteligente ambar 5s",   "054212dd41c08fee72010e005a0105"),
+            9: ("Semáforo inteligente verde 29s",  "054212dd41c08fee72010e005a021d"),
             10: ("Carretera seca", "024212DD69C08FF46901"),
             11: ("Carretera mojada", "024212DD69C08FF46902"),
             12: ("Carretera nieve", "024212DD69C08FF46903"),
             13: ("Bicicleta en movimiento", "03000100020003000402"),
-            14: ("Bicicleta accidentada", "03000100020003000403")
-            # 14: ("infoPanel Incendio", "01"),
-            # 15: ("infoPanel Carrera ciclista", "01"),
+            14: ("Bicicleta accidentada", "03000100020003000403"),
+            15: ("infoPanel Incendio 2 Km", "064212dd41c08fee72010e005a496e63656e64696f20612032204b6d"),
+            16: ("infoPanel Carrera ciclista", "064212dd41c08fee72010e005a507275656261206369636c69737461")
             # 16: ("Peatón cerca", "01"),
             # 17: ("Vehículo lento", "01"),
             # 18: ("Vehículo de emergencia", "01")
