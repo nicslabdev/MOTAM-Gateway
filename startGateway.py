@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Jul 26, 2019.           #
+# Created by Manuel Montenegro, Jul 30, 2019.           #
 #########################################################
 
 
@@ -22,20 +22,20 @@ import subprocess
 from modules import in_Ble4Scanner
 from modules import in_Ble5Scanner
 from modules import in_InteractiveScanner
-# from modules import in_ObdGpsSim
+from modules import in_ObdGpsBeaconsTrip
 
 
 # ==== Global variables ====
 
 # Version of this script
-scriptVersion = 3.2
+scriptVersion = 3.3
 
 # OBD II and GPS data can be loaded from DB
-simulatedObdGps = False
-# OBD II and GPS is connected: read from hardware interface
-obdGps = False
+obdGpsTrip = False
 # Bluetooth beacons can be loaded from session DB
-simulatedBeacons = False
+beaconsTrip = False
+# OBD II and GPS is connected: read from hardware interface
+realObdGps = False
 # Bluetooth 4 beacons can be real (RPi Bluetooth interface)
 ble4Beacons = False
 # Bluetooth 5 beacons can be real (nRF52840 dongle)
@@ -49,12 +49,11 @@ dump = False
 # file handler for logging the receiving data from socket
 dumpFile = None
 
+# obdGpsBeacons alternative saved session trip passed by arguments
+obdGpsBeaconsDb = None
 # Coordinates given by terminal of BLE interactive beacons
 interactiveBeaconsCoord = None
 
-# path of session database file
-sessionRoute = "simulation/sessions/"
-sessionPath = sessionRoute+"UMA-5_10_17-Simulation_Beacons_v2.db"
 # path of certificate and its key
 certRoute = "certs/"
 certPath = certRoute+"pasarela_normal.crt"
@@ -66,25 +65,19 @@ clientLogPath = "client.log"
 # path of camera shots
 shotsRoute = "shots/"
 
-# time lapse between frame transmissions from Gateway to AVATAR in seconds
-# readStep = 1
-
 # Seconds after the beacon will be removed from list (beacon is not in range)
 beaconThreshold = 1
 
-# ip and port assigned to the gateway in AVATAR-Gateway connection
+# default ip and port assigned to the gateway in AVATAR-Gateway connection
 gatewayIP = "192.168.0.1"
 
-# gateway port in AVATAR-Gateway connection
+# default gateway port in AVATAR-Gateway connection
 gatewayPort = 4443
 
 # user logged on the system from AVATAR
 user = None
 
-# queue where thread will put data (dictionary) from sensors or interactive simulation
-beaconsQueue = queue.Queue()
-
-# timer for taking photos every x seconds with RPi camera modules
+# software timer for taking photos every x seconds with RPi camera modules
 cameraTimer = None
 
 # User ID and Group ID of Pi user for managging files
@@ -95,14 +88,18 @@ gid = 1000
 # ==== Main execution ====
 
 def main():
-    global sessionPath
+
     ble4Thread = None
     ble5Thread = None
     bleInteractiveThread = None
     receiveFromSocketThread = None
+    obdGpsBeaconsTripThread = None
 
     # threading event used for closing safely the threads when interrupt signal is received
     threadStopEvent = threading.Event()
+
+    # queue where thread will put data (dictionary format) from sensors or car interfaces (or simulation)
+    dataQueue = queue.Queue()
 
     # capture command line arguments
     setUpArgParser()
@@ -121,25 +118,20 @@ def main():
         receiveFromSocketThread.daemon = True
         receiveFromSocketThread.start()
 
-    if (simulatedObdGps):
-        pass
-        # threading event used for closing safely the DataBase when interrupt signal is received
-
-        # start database reader and parser thread
-        # gpsSim = simulation.GpsSim (sessionPath)
-        # dbReaderThread = threading.Thread(target=gpsSim.dbReader, args=(dbReaderThreadStop,))
-        # dbReaderThread.start()
+    if obdGpsTrip:
+        obdGpsBeaconsTrip = in_ObdGpsBeaconsTrip.ObdGpsBeaconsTrip (threadStopEvent, dataQueue, beaconThreshold, beaconsTrip, obdGpsBeaconsDb)
+        obdGpsBeaconsTripThread = obdGpsBeaconsTrip.run()
 
     if (ble4Beacons):
-        ble4Scanner = in_Ble4Scanner.Ble4Scanner (threadStopEvent, beaconsQueue, beaconThreshold)
+        ble4Scanner = in_Ble4Scanner.Ble4Scanner (threadStopEvent, dataQueue, beaconThreshold)
         ble4Thread = ble4Scanner.run()
 
     if (ble5Beacons):
-        ble5Scanner = in_Ble5Scanner.Ble5Scanner (threadStopEvent, beaconsQueue, beaconThreshold)
+        ble5Scanner = in_Ble5Scanner.Ble5Scanner (threadStopEvent, dataQueue, beaconThreshold)
         ble5Thread = ble5Scanner.run()
 
     if (interactiveBeacons):
-        bleInteractive = in_InteractiveScanner.InteractiveScanner (threadStopEvent, beaconsQueue, beaconThreshold, interactiveBeaconsCoord)
+        bleInteractive = in_InteractiveScanner.InteractiveScanner (threadStopEvent, dataQueue, beaconThreshold, interactiveBeaconsCoord)
         bleInteractiveThread = bleInteractive.run()
 
     # start thread for taking shots of the driver every x seconds
@@ -158,11 +150,13 @@ def main():
         takePictureStartTimer (threadStopEvent, filePath)
 
     # start thread that parse and send by socket the collected data
-    sendDataToAvatarThread = threading.Thread(target=sendDataToAvatar, args=(threadStopEvent, sock))
+    sendDataToAvatarThread = threading.Thread(target=sendDataToAvatar, args=(threadStopEvent, dataQueue, sock))
     sendDataToAvatarThread.daemon = True
     sendDataToAvatarThread.start()
 
     try:
+        if obdGpsBeaconsTripThread != None:
+            obdGpsBeaconsTripThread.join()
         if ble4Thread != None:
             ble4Thread.join()
         if ble5Thread != None:
@@ -289,14 +283,14 @@ def takePictureStartTimer (threadStopEvent, filePath):
 
 
 # Read units of data from database session trip and send it to AVATAR
-def sendDataToAvatar ( threadStopEvent, sock ):
+def sendDataToAvatar ( threadStopEvent, dataQueue, sock ):
 
     dict = None
 
     # this will stop the execution with keyboard interrupt
     while not threadStopEvent.is_set():
 
-        dataDict = beaconsQueue.get()
+        dataDict = dataQueue.get()
 
         if 'sensors' in dataDict:
             dict = dataDict
@@ -318,13 +312,13 @@ def sendDataToAvatar ( threadStopEvent, sock ):
 # manage command line interface arguments
 def setUpArgParser ( ):
 
-    global sessionPath
     global certPath
     global keyCertPath
     global caCertPath
     global gatewayIP
-    global simulatedObdGps
-    global simulatedBeacons
+    global obdGpsTrip
+    global beaconsTrip
+    global obdGpsBeaconsDb
     global interactiveBeacons
     global interactiveBeaconsCoord
     global ble4Beacons
@@ -341,7 +335,8 @@ def setUpArgParser ( ):
     argParser = argparse.ArgumentParser(description = scriptDescription)
 
     # command line arguments
-    argParser.add_argument("-l", "--load", help="Loads a specific session database. You have to specify the database file. The file must be on session folder. By default, the script loads a saved session trip.")
+    argParser.add_argument("-l", "--loadCarTrip", help="Loads a specific session database. This will simulate only OBDII and GPS data. You can use default saved session trip database or indicate the name of another one placed in sessions folder: '--load' or '--load Session.db'", nargs='?', type=str, const='no_path')
+    argParser.add_argument("-L", "--loadBeaconsTrip", help="This arguments must be indicated together with '--loadCarTrip'. This activates the simulated beacons from session database.", action='store_true')
     argParser.add_argument("-c", "--cert", help="Loads a specific gateway certificate. By default, the script loads certificate for normal vehicle. The certificate file must be on cetificates folder.")
     argParser.add_argument("-C", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on certificates folder.")
     argParser.add_argument("-a", "--address", help="Disables Wifi-Direct and open socket on selected IP ", type=str)
@@ -355,8 +350,12 @@ def setUpArgParser ( ):
 
     args = argParser.parse_args ()
 
-    if args.load:
-        sessionPath = sessionRoute+args.load
+    if args.loadCarTrip:
+        obdGpsTrip = True
+        if args.loadCarTrip != 'no_path':
+            obdGpsBeaconsDb = args.loadCarTrip
+        if args.loadBeaconsTrip:
+            beaconsTrip = True
 
     if args.cert:
         certPath = certRoute + args.cert
@@ -369,18 +368,15 @@ def setUpArgParser ( ):
         gatewayIP = args.address
 
     if args.real_obd_gps:
-        simulatedObdGps = False
+        pass
 
     if args.real_ble4:
-        simulatedBeacons = False
         ble4Beacons = True
 
     if args.real_ble5:
-        simulatedBeacons = False
         ble5Beacons = True
 
     if args.interactive is not None and len(args.interactive) in (0,2):
-        simulatedBeacons = False
         interactiveBeacons = True
         interactiveBeaconsCoord = args.interactive
 

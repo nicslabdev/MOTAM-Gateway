@@ -60,7 +60,7 @@ Simulation has a duration of 155 seconds.
 |--|--|
 | 5 to 10 | Baby seat: No baby, not fastened |
 | 10 to 15 | Baby seat: Baby, not fastened |
-| 15 | Baby seat: Baby, fastened |
+| 15 to 20 | Baby seat: Baby, fastened |
 | 20 to 22 | Traffic light: green state (2 seconds left) |
 | 23 to 25 | Traffic light: yellow state (2 seconds left) |
 | 26 to 27 | Traffic light: red state (3 seconds left) |
@@ -89,6 +89,9 @@ The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub reposi
 > [**MOTAM Scanner repository on GitHub.**](https://github.com/nicslabdev/MOTAM-Scanner)
 
 ## Changelog
+### Version 3.3
+- Integrated OBDII GPS and beacons session (saved trip) support.
+
 ### Version 3.2
 - Integrated Raspberry Pi Camera module
 - Added script argument for taking pictures of driver
