@@ -55,15 +55,19 @@ For loading an OBDII, GPS and captured beacons session trip (default trip):
 	sudo python3 startGateway.py --loadCarTrip --loadBeaconsTrip
 
 For using another type of vehicle (change certificate). Available: normal, emergency and slow vehicle:
+
 	sudo python3 startGateway.py --cert pasarela_lento.crt
 
 For capturing real BLE4 beacons with real receiver.
+
 	sudo python3 startGateway.py --real_ble4
 
 For capturing real BLE5 beacons with real receiver.
+
 	sudo python3 startGateway.py --real_ble5
 
 Start capturing camera pictures of the driver
+
 	sudo python3 startGateway.py --shots
 
 
