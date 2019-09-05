@@ -115,6 +115,11 @@ Intelligent Traffic Light in green state 29 seconds left.
 - Bicycle accident.
 - Information panel "Incendio 2 Km"
 - Information panel "Carrera ciclista"
+- Pedestrian near.
+- Slow Vehicle.
+- Emergency vehicle moving on left road side.
+- Emergency vehicle moving on center of the road.
+- Emergency vehicle moving on right road side.
 
 ## Bluetooth 5 Beacon Scanner
 The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub repository.
@@ -122,6 +127,12 @@ The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub reposi
 > [**MOTAM Scanner repository on GitHub.**](https://github.com/nicslabdev/MOTAM-Scanner)
 
 ## Changelog
+### Version 3.4
+- Updated AVATAR JSON for info Panel.
+- Updated frame format: new beacons ID for sensors.
+- Added examples of pedestrian, slow vehicle, emergency vehicle and crashed vehicle on interactive mode.
+- Updated simulation DB (new frame format).
+
 ### Version 3.3
 - Integrated OBDII GPS and beacons session (saved trip) support.
 

@@ -25,20 +25,23 @@ class InteractiveScanner:
             3: ("Sillita sin sentar no abrochado", "0400010002000300040000"),
             4: ("Semáforo normal rojo",  "014212DDEDC09004EC0118000A00"),
             5: ("Semáforo normal ambar", "014212DDEDC09004EC0118000A01"),
-            6: ("Semáforo normal verde", "014212DDEDC09004EC0118000A02"),
-            7: ("Semáforo inteligente rojo 16s",   "054212dd41c08fee72010e005a0010"),
-            8: ("Semáforo inteligente ambar 5s",   "054212dd41c08fee72010e005a0105"),
-            9: ("Semáforo inteligente verde 29s",  "054212dd41c08fee72010e005a021d"),
+            6: ("Semáforo normal verde",            "014212DDEDC09004EC0118000A02"),
+            7: ("Semáforo inteligente rojo 16s",    "014212dd41c08fee72010e005a0010"),
+            8: ("Semáforo inteligente ambar 5s",   "014212dd41c08fee72010e005a0105"),
+            9: ("Semáforo inteligente verde 29s",  "014212dd41c08fee72010e005a021d"),
             10: ("Carretera seca", "024212DD69C08FF46901"),
             11: ("Carretera mojada", "024212DD69C08FF46902"),
             12: ("Carretera nieve", "024212DD69C08FF46903"),
             13: ("Bicicleta en movimiento", "03000100020003000402"),
             14: ("Bicicleta accidentada", "03000100020003000403"),
-            15: ("infoPanel Incendio 2 Km", "064212dd41c08fee72010e005a496e63656e64696f20612032204b6d"),
-            16: ("infoPanel Carrera ciclista", "064212dd41c08fee72010e005a507275656261206369636c69737461")
-            # 16: ("Peatón cerca", "01"),
-            # 17: ("Vehículo lento", "01"),
-            # 18: ("Vehículo de emergencia", "01")
+            15: ("infoPanel Incendio 2 Km", "094212dd41c08fee72010e005a496e63656e64696f20612032204b6d"),
+            16: ("infoPanel Carrera ciclista", "094212dd41c08fee72010e005a507275656261206369636c69737461"),
+            17: ("Peatón cerca", "0A0011002200330044"),
+            18: ("Vehículo lento", "080111022203330444"),
+            19: ("Vehículo de emergencia en parte izq de calzada", "05011102220333044400"),
+            20: ("Vehículo de emergencia en parte cent de calzada", "05011102220333044401"),
+            21: ("Vehículo de emergencia en parte der de calzada", "05011102220333044402"),
+            22: ("Vehículo accidentado", "07111122223333444469")
         }
 
         # Check if new coordinates has been given

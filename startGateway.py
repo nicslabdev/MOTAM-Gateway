@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Jul 31, 2019.           #
+# Created by Manuel Montenegro, Sep 05, 2019.           #
 #########################################################
 
 
@@ -28,7 +28,7 @@ from modules import in_ObdGpsBeaconsTrip
 # ==== Global variables ====
 
 # Version of this script
-scriptVersion = 3.3
+scriptVersion = 3.4
 
 # OBD II and GPS data can be loaded from DB
 obdGpsTrip = False
