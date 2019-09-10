@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Sep 05, 2019.           #
+# Created by Manuel Montenegro, Sep 10, 2019.           #
 #########################################################
 
 
@@ -48,6 +48,8 @@ camera = False
 dump = False
 # file handler for logging the receiving data from socket
 dumpFile = None
+# client cert required
+clientCert = False
 
 # obdGpsBeacons alternative saved session trip passed by arguments
 obdGpsBeaconsDb = None
@@ -198,8 +200,12 @@ def createSslSocket ( ):
         # Certificate Authority
         SSLcontext.load_verify_locations(caCertPath)
         # certificates are required from the other side of the socket connection
-        SSLcontext.verify_mode = ssl.CERT_NONE
-        # SSLcontext.verify_mode = ssl.CERT_REQUIRED
+        
+        if clientCert:
+            SSLcontext.verify_mode = ssl.CERT_REQUIRED
+        else:
+            SSLcontext.verify_mode = ssl.CERT_NONE
+
         # check_hostname to True will require certificate
         # SSLcontext.check_hostname = True
 
@@ -327,6 +333,7 @@ def setUpArgParser ( ):
     global dumpFile
     global clientLogPath
     global camera
+    global clientCert
 
     # description of the script shown in command line
     scriptDescription = 'This is the main script of MOTAM Gateway. By default, this starts a Wifi Direct connection'
@@ -340,13 +347,14 @@ def setUpArgParser ( ):
     argParser.add_argument("-c", "--cert", help="Loads a specific gateway certificate. By default, the script loads certificate for normal vehicle. The certificate file must be on cetificates folder.")
     argParser.add_argument("-C", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on certificates folder.")
     argParser.add_argument("-a", "--address", help="Disables Wifi-Direct and open socket on selected IP ", type=str)
-    argParser.add_argument("-r", "--real_obd_gps", help="Uses OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB.", action='store_true')
-    argParser.add_argument("-b", "--real_ble4", help="Uses Bluetooth 4 RPi receiver for capturing road beacons", action='store_true')
-    argParser.add_argument("-B", "--real_ble5", help="Uses nRF52840 dongle for capturing BLE5 beacons.", action='store_true')
-    argParser.add_argument("-i", "--interactive", help="Simulates BLE scanner in real time from terminal input. You can use only '--interactive' (default coordinates) '--interactive 36.778 -4.234' ", nargs='*', type=float)
     argParser.add_argument("-d", "--dump", help="Dumps client messages to client.log.", action='store_true')
     argParser.add_argument("-s", "--shots", help="Starts camera and begins taking pictures of the driver", action="store_true")
     argParser.add_argument("-v", "--version", help="Shows script version", action="store_true")
+    argParser.add_argument("-R", "--req_cert", help="Forces the client (AVATAR) certificate request", action='store_true')
+    argParser.add_argument("-r", "--real_obd_gps", help="Data source: Uses OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB.", action='store_true')
+    argParser.add_argument("-b", "--real_ble4", help="Data source: Uses Bluetooth 4 RPi receiver for capturing road beacons", action='store_true')
+    argParser.add_argument("-B", "--real_ble5", help="Data source: Uses nRF52840 dongle for capturing BLE5 beacons.", action='store_true')
+    argParser.add_argument("-i", "--interactive", help="Data source: Simulates BLE scanner in real time from terminal input. You can use only '--interactive' (default coordinates) '--interactive 36.778 -4.234' ", nargs='*', type=float)
 
     args = argParser.parse_args ()
 
@@ -391,6 +399,9 @@ def setUpArgParser ( ):
     if args.version:
         print ("MOTAM Simulation script version: ", scriptVersion)
         exit()
+
+    if args.req_cert:
+        clientCert = True
 
 # start script
 if __name__ == '__main__':
