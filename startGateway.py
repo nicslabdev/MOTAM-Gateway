@@ -107,7 +107,7 @@ def main():
     if gatewayIP == "192.168.0.1":
         subprocess.run(["wpa_cli", "-i", "p2p-dev-wlan0", "p2p_find"], capture_output=True)
         subprocess.run(["wpa_cli", "-i", "p2p-dev-wlan0", "p2p_group_add"], capture_output=True)
-        subprocess.run("wpa_cli -i $(ip -br link | grep -Po 'p2p-wlan0-\d+') wps_pin any 12345670", shell=True, capture_output=True)
+        subprocess.run("wpa_cli -i $(ip -br link | grep -Po 'p2p-wlan0-\\d+') wps_pin any 12345670", shell=True, capture_output=True)
 
     # create SSL socket for communication with AVATAR
     sock = createSslSocket ()
@@ -181,7 +181,7 @@ def main():
     finally:
         # Close Wifi-Direct connection
         if gatewayIP == "192.168.0.1":
-            subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\d+')", shell=True, capture_output=True)
+            subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\\d+')", shell=True, capture_output=True)
 
 
 # create a SSL connection with AVATAR
@@ -216,7 +216,7 @@ def createSslSocket ( ):
         sockConnection, clientAddress = sock.accept()
         # wrap socket with SSL layer
         sslSockConnection = SSLcontext.wrap_socket(sockConnection, server_side=True)
-        print ("Connection accepted!")
+        print ("Connection accepted from", clientAddress[0])
 
         if SSLcontext.verify_mode == ssl.CERT_REQUIRED:
             user = sslSockConnection.getpeercert() ["subject"][0][0][1]
@@ -229,17 +229,17 @@ def createSslSocket ( ):
 
     except ssl.SSLError as err:
         print (err)
-        subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\d+')", shell=True, capture_output=True)
+        subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\\d+')", shell=True, capture_output=True)
         exit()
 
     # if the other side close the socket...
     except socket.error:
         print("Connection Closed")
-        subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\d+')", shell=True, capture_output=True)
+        subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\\d+')", shell=True, capture_output=True)
         exit()
 
     except KeyboardInterrupt:
-        subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\d+')", shell=True, capture_output=True)
+        subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\\d+')", shell=True, capture_output=True)
         exit()
 
 
@@ -254,7 +254,7 @@ def receiveFromSocket (threadStopEvent, sock):
 
     dumpFile.close()
 
-# Reads data from socket and dumps it if the flag is activated
+# Reads data from socket and dumps it if flag is activated
 def readFromSocket (sock):
 
     global dumpFile
@@ -282,7 +282,7 @@ def takePictureStartTimer (threadStopEvent, filePath):
         subprocess.run(["raspistill", "-rot", "180", "-t", "500", "-ts", "-o", filePath, "-n"])
 
 
-# Read units of data from database session trip and send it to AVATAR
+# Read units of data from sensor store queue and send it to AVATAR
 def sendDataToAvatar ( threadStopEvent, dataQueue, sock ):
 
     dict = None
