@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Sep 10, 2019.           #
+# Created by Manuel Montenegro, Sep 12, 2019.           #
 #########################################################
 
 
@@ -48,8 +48,6 @@ camera = False
 dump = False
 # file handler for logging the receiving data from socket
 dumpFile = None
-# client cert required
-clientCert = False
 
 # obdGpsBeacons alternative saved session trip passed by arguments
 obdGpsBeaconsDb = None
@@ -200,14 +198,7 @@ def createSslSocket ( ):
         # Certificate Authority
         SSLcontext.load_verify_locations(caCertPath)
         # certificates are required from the other side of the socket connection
-        
-        if clientCert:
-            SSLcontext.verify_mode = ssl.CERT_REQUIRED
-        else:
-            SSLcontext.verify_mode = ssl.CERT_NONE
-
-        # check_hostname to True will require certificate
-        # SSLcontext.check_hostname = True
+        SSLcontext.verify_mode = ssl.CERT_REQUIRED
 
         # create secure socket for data transmission
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -224,10 +215,7 @@ def createSslSocket ( ):
         sslSockConnection = SSLcontext.wrap_socket(sockConnection, server_side=True)
         print ("Connection accepted from", clientAddress[0])
 
-        if SSLcontext.verify_mode == ssl.CERT_REQUIRED:
-            user = sslSockConnection.getpeercert() ["subject"][0][0][1]
-        elif SSLcontext.verify_mode == ssl.CERT_NONE:
-            user = 'anonymous'
+        user = sslSockConnection.getpeercert() ["subject"][0][0][1]
 
         print ("Welcome: ", user)
 
@@ -333,7 +321,6 @@ def setUpArgParser ( ):
     global dumpFile
     global clientLogPath
     global camera
-    global clientCert
 
     # description of the script shown in command line
     scriptDescription = 'This is the main script of MOTAM Gateway. By default, this starts a Wifi Direct connection'
@@ -350,7 +337,6 @@ def setUpArgParser ( ):
     argParser.add_argument("-d", "--dump", help="Dumps client messages to client.log.", action='store_true')
     argParser.add_argument("-s", "--shots", help="Starts camera and begins taking pictures of the driver", action="store_true")
     argParser.add_argument("-v", "--version", help="Shows script version", action="store_true")
-    argParser.add_argument("-R", "--req_cert", help="Forces the client (AVATAR) certificate request", action='store_true')
     argParser.add_argument("-r", "--real_obd_gps", help="Data source: Uses OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB.", action='store_true')
     argParser.add_argument("-b", "--real_ble4", help="Data source: Uses Bluetooth 4 RPi receiver for capturing road beacons", action='store_true')
     argParser.add_argument("-B", "--real_ble5", help="Data source: Uses nRF52840 dongle for capturing BLE5 beacons.", action='store_true')
@@ -399,9 +385,6 @@ def setUpArgParser ( ):
     if args.version:
         print ("MOTAM Simulation script version: ", scriptVersion)
         exit()
-
-    if args.req_cert:
-        clientCert = True
 
 # start script
 if __name__ == '__main__':
