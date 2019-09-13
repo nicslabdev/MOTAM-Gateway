@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Sep 12, 2019.           #
+# Created by Manuel Montenegro, Sep 13, 2019.           #
 #########################################################
 
 
@@ -18,6 +18,7 @@ import json
 import socket
 import ssl
 import subprocess
+import base64
 
 from modules import in_Ble4Scanner
 from modules import in_Ble5Scanner
@@ -28,7 +29,7 @@ from modules import in_ObdGpsBeaconsTrip
 # ==== Global variables ====
 
 # Version of this script
-scriptVersion = 3.4
+scriptVersion = 3.5
 
 # OBD II and GPS data can be loaded from DB
 obdGpsTrip = False
@@ -42,12 +43,6 @@ ble4Beacons = False
 ble5Beacons = False
 # BLE interactive beacons generated from terminal in real time
 interactiveBeacons = False
-# Camera capture of the driver
-camera = False
-# Dump client data received from socket to client.log
-dump = False
-# file handler for logging the receiving data from socket
-dumpFile = None
 
 # obdGpsBeacons alternative saved session trip passed by arguments
 obdGpsBeaconsDb = None
@@ -60,8 +55,6 @@ certPath = certRoute+"pasarela_normal.crt"
 keyCertPath = certRoute+"pasarela_normal.key"
 # path of CA certificate
 caCertPath = certRoute+"cacert.crt"
-# path of client.log file (will contain the data received from socket)
-clientLogPath = "client.log"
 # path of camera shots
 shotsRoute = "shots/"
 
@@ -70,7 +63,6 @@ beaconThreshold = 1
 
 # default ip and port assigned to the gateway in AVATAR-Gateway connection
 gatewayIP = "192.168.0.1"
-
 # default gateway port in AVATAR-Gateway connection
 gatewayPort = 4443
 
@@ -112,12 +104,6 @@ def main():
     # create SSL socket for communication with AVATAR
     sock = createSslSocket ()
 
-    # start thread for reading data received from socket (like user image)
-    if dump:
-        receiveFromSocketThread = threading.Thread(target=receiveFromSocket, args=(threadStopEvent, sock))
-        receiveFromSocketThread.daemon = True
-        receiveFromSocketThread.start()
-
     if obdGpsTrip:
         obdGpsBeaconsTrip = in_ObdGpsBeaconsTrip.ObdGpsBeaconsTrip (threadStopEvent, dataQueue, beaconThreshold, beaconsTrip, obdGpsBeaconsDb)
         obdGpsBeaconsTripThread = obdGpsBeaconsTrip.run()
@@ -134,25 +120,21 @@ def main():
         bleInteractive = in_InteractiveScanner.InteractiveScanner (threadStopEvent, dataQueue, beaconThreshold, interactiveBeaconsCoord)
         bleInteractiveThread = bleInteractive.run()
 
+    # make folder for user's profile photo and camera shots. Returns path for camera command
+    takePictureMakeDir ()
+
     # start thread for taking shots of the driver every x seconds
-    if camera:
-        path = shotsRoute + user
-        filePath = path + "/%d.jpg"
-
-        if not os.path.exists(shotsRoute):
-            os.makedirs(shotsRoute, 0o755)
-            os.chown(shotsRoute, uid, gid)
-        if not os.path.exists(path):
-            os.makedirs(path, 0o755)
-            os.chown(path, uid, gid)
-
-        # take picture every 30 seconds
-        takePictureStartTimer (threadStopEvent, filePath)
+    takePictureStartTimer (threadStopEvent)
 
     # start thread that parse and send by socket the collected data
     sendDataToAvatarThread = threading.Thread(target=sendDataToAvatar, args=(threadStopEvent, dataQueue, sock))
     sendDataToAvatarThread.daemon = True
     sendDataToAvatarThread.start()
+
+    # start thread for reading data received from socket (like user image)
+    receiveFromSocketThread = threading.Thread(target=receiveFromSocket, args=(threadStopEvent, sock))
+    receiveFromSocketThread.daemon = True
+    receiveFromSocketThread.start()
 
     try:
         if obdGpsBeaconsTripThread != None:
@@ -171,18 +153,21 @@ def main():
     # finishing the execution with Ctrl + c 
     except KeyboardInterrupt:
         threadStopEvent.set()
-        if cameraTimer != None:
-            cameraTimer.cancel()
 
     # unknown exception from nobody knows where
     except Exception as error:
         print ("\r\nUnknown error\r\n ", error)
 
     finally:
+        # stop taking pictures
+        if cameraTimer != None:
+            cameraTimer.cancel()
         # Close Wifi-Direct connection
         if gatewayIP == "192.168.0.1":
             subprocess.run("wpa_cli -i p2p-dev-wlan0 p2p_group_remove $(ip -br link | grep -Po 'p2p-wlan0-\\d+')", shell=True, capture_output=True)
 
+
+# ==== Functions ====
 
 # create a SSL connection with AVATAR
 def createSslSocket ( ):
@@ -240,40 +225,74 @@ def createSslSocket ( ):
 # Receives an image (or other data) from AVATAR by socket and store it
 def receiveFromSocket (threadStopEvent, sock):
 
-    global dumpFile
-
     # this will stop the execution with keyboard interrupt
     while not threadStopEvent.is_set():
-        readFromSocket (sock)
 
-    dumpFile.close()
+        dataRead = sock.recv(1024)
 
-# Reads data from socket and dumps it if flag is activated
-def readFromSocket (sock):
+        idMessage = int(dataRead.decode("utf-8"))
 
-    global dumpFile
-    global dump
+        # User profile photo
+        if idMessage == 0:
+            image = b''
+            dataRead = sock.recv(1024)
+            imageLength = int(dataRead.decode("utf-8"))
 
-    dataRead = sock.recv(1024)
+            for _ in range (0, imageLength, 1024):
+                image += sock.recv(1024)
 
-    if dump:
-        # dumpFile.write(str(time.time()))
-        # dumpFile.write ("\r\n")
-        dumpFile.write (dataRead.decode("utf-8"))
-        # dumpFile.write ("\r\n\r\n\r\n")
-        dumpFile.flush()
+            imgdata = base64.b64decode(image.decode("utf-8"))
 
-    return dataRead
+            global shotsRoute
+            global user
 
-def takePictureStartTimer (threadStopEvent, filePath):
+            filePath = shotsRoute+user+"/_profile.jpg"
+
+            with open(filePath, 'wb') as f:
+                f.write(imgdata)
+        
+        # Activate emergency mode
+        elif idMessage == 1:
+            print ("Enabling emergency mode!")
+
+        # Activate slow vehicle mode
+        elif idMessage == 2:
+            print ("Enabling slow vehicle mode")
+
+        # Activate crashed vehicle mode
+        elif idMessage == 3:
+            print ("Enabling crashed vehicle mode")
+
+# Make folder for saved camera shots of driver and profile photo from AVATAR
+def takePictureMakeDir ():
+    global shotsRoute
+    global user
+
+    path = shotsRoute + user
+
+    if not os.path.exists(shotsRoute):
+        os.makedirs(shotsRoute, 0o755)
+        os.chown(shotsRoute, uid, gid)
+    if not os.path.exists(path):
+        os.makedirs(path, 0o755)
+        os.chown(path, uid, gid)
+
+# starts a 30s timer for taking picture with RPI camera
+def takePictureStartTimer (threadStopEvent):
 
     global cameraTimer
+    global shotsRoute
+    global user
+
+    filePath = shotsRoute + user + "/%d.jpg"
 
     if not threadStopEvent.is_set():
         # take picture every 30 sec
-        cameraTimer = threading.Timer(30, takePictureStartTimer, [threadStopEvent, filePath])
+        cameraTimer = threading.Timer(30, takePictureStartTimer, [threadStopEvent])
         cameraTimer.start()
-        subprocess.run(["raspistill", "-rot", "180", "-t", "500", "-ts", "-o", filePath, "-n"])
+        # run raspistill and redirect output tu /dev/null in order to avoid error messages when camera is not connected
+        with open(os.devnull, 'w') as devnull:
+            subprocess.run(["raspistill", "-rot", "180", "-t", "500", "-ts", "-o", filePath, "-n"], stdout=devnull, stderr=devnull)
 
 
 # Read units of data from sensor store queue and send it to AVATAR
@@ -317,10 +336,6 @@ def setUpArgParser ( ):
     global interactiveBeaconsCoord
     global ble4Beacons
     global ble5Beacons
-    global dump
-    global dumpFile
-    global clientLogPath
-    global camera
 
     # description of the script shown in command line
     scriptDescription = 'This is the main script of MOTAM Gateway. By default, this starts a Wifi Direct connection'
@@ -334,8 +349,6 @@ def setUpArgParser ( ):
     argParser.add_argument("-c", "--cert", help="Loads a specific gateway certificate. By default, the script loads certificate for normal vehicle. The certificate file must be on cetificates folder.")
     argParser.add_argument("-C", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on certificates folder.")
     argParser.add_argument("-a", "--address", help="Disables Wifi-Direct and open socket on selected IP ", type=str)
-    argParser.add_argument("-d", "--dump", help="Dumps client messages to client.log.", action='store_true')
-    argParser.add_argument("-s", "--shots", help="Starts camera and begins taking pictures of the driver", action="store_true")
     argParser.add_argument("-v", "--version", help="Shows script version", action="store_true")
     argParser.add_argument("-r", "--real_obd_gps", help="Data source: Uses OBDII USB interface and GPS receiver instead of simulating their values. It's neccesary to connect OBDII and GPS by USB.", action='store_true')
     argParser.add_argument("-b", "--real_ble4", help="Data source: Uses Bluetooth 4 RPi receiver for capturing road beacons", action='store_true')
@@ -373,14 +386,6 @@ def setUpArgParser ( ):
     if args.interactive is not None and len(args.interactive) in (0,2):
         interactiveBeacons = True
         interactiveBeaconsCoord = args.interactive
-
-    if args.dump:
-        # this will start a new thread that will write in a file all the data received from AVATAR
-        dump = True
-        dumpFile = open(clientLogPath, "w")
-
-    if args.shots:
-        camera = True
 
     if args.version:
         print ("MOTAM Simulation script version: ", scriptVersion)

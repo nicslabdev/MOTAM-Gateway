@@ -38,10 +38,6 @@ For Interactive Scanner mode and custom location coordinates of beacons:
 
 	sudo python3 startGateway.py --interactive 36.715923 -4.477482
 
-For Interactive Scanner mode and logging data received from AVATAR (just for development)
-
-	sudo python3 startGateway.py --interactive --dump
-
 For loading a OBDII and GPS session trip (default session trip):
 
 	sudo python3 startGateway.py --loadCarTrip
@@ -65,11 +61,6 @@ For capturing real BLE4 beacons with real receiver.
 For capturing real BLE5 beacons with real receiver.
 
 	sudo python3 startGateway.py --real_ble5
-
-Start capturing camera pictures of the driver
-
-	sudo python3 startGateway.py --shots
-
 
 ## Connection parameters
 - Gateway IP direction: 192.168.0.1
@@ -127,6 +118,12 @@ The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub reposi
 > [**MOTAM Scanner repository on GitHub.**](https://github.com/nicslabdev/MOTAM-Scanner)
 
 ## Changelog
+### Version 3.5
+- Deleted force request client certificate argument.
+- Deleted client log dump argument.
+- Deleted taking driver shots arguments. Now, this is not optional, gateway will take pictures if camera is connected
+- User profile is downloaded from AVATAR.
+
 ### Version 3.4
 - Updated AVATAR JSON for info Panel.
 - Updated frame format: new beacons ID for sensors.
