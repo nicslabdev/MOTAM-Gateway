@@ -31,7 +31,7 @@ class ObdGpsBeaconsTrip:
             self.sessionPath = self.sessionRoute+obdGpsBeaconsDbFile
             print (self.sessionPath)
         else:
-            self.sessionPath = self.sessionRoute+"UMA-5_10_17-Simulation_Beacons_v3.db"
+            self.sessionPath = self.sessionRoute+"UMA-5_10_17-Simulation_Beacons_v3.1.db"
 
     def run (self):
         obdGpsBeaconsTripThread = threading.Thread(target=self.dbReader)
