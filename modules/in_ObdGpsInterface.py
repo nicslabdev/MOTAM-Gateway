@@ -9,7 +9,10 @@
 
 import threading
 import subprocess
+import time
+import datetime
 from gps import *
+import obd
 from modules import SensorStore
 
 
@@ -50,13 +53,27 @@ class ObdGpsInterface:
         subprocess.run(["gpsd", self.gpsPath, "-F", "/var/run/gpsd.sock"])
         self.gpsd = gps (mode=WATCH_ENABLE|WATCH_NEWSTYLE)
 
+        # start OBD connection
+        connection = obd.OBD(portstr=self.obdPath, fast=False)
+        cmd = obd.commands.SPEED
+
         while not self.threadStopEvent.is_set():
-            report = self.gpsd.next()
+            gpsReport = self.gpsd.next()
+
+            # if gps data is received, ask to OBDII for vehicle speed
+            obdResponse = connection.query(cmd)
+
             try:
-                print (report.lat)
-            except:
-                print ("no existe")
+                # conversion to UNIX timestamp
+                gpsTime = calendar.timegm(datetime.datetime.strptime(gpsReport.time, "%Y-%m-%dT%H:%M:%S.%fZ").timetuple())
+                # structure for generated JSON
+                carData = {"carInfo": {"engineOn":True, "vss":int(obdResponse.value.magnitude), "lat":gpsReport.lat, "lon":gpsReport.lon, "gpsTime":gpsTime, "course":int(gpsReport.track)}}
+                
+                # put on the queue the data collected
+                self.dataQueue.put(carData)
 
+            except Exception as e:
+                pass
 
-        print ("fuera!")
+        # kill gps daemon when thread stops
         subprocess.run(["killall", "gpsd"])

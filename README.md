@@ -38,6 +38,10 @@ For Interactive Scanner mode and custom location coordinates of beacons:
 
 	sudo python3 startGateway.py --interactive 36.715923 -4.477482
 
+For capturing real data from OBDII and GPS receiver (must be connected to USB)
+
+	sudo python3 startGateway.py --real_obd_gps
+
 For loading a OBDII and GPS session trip (default session trip):
 
 	sudo python3 startGateway.py --loadCarTrip
@@ -118,6 +122,12 @@ The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub reposi
 > [**MOTAM Scanner repository on GitHub.**](https://github.com/nicslabdev/MOTAM-Scanner)
 
 ## Changelog
+### Version 3.6
+- Fixed bug: simulation database doesn't work
+- Added new simulation DB for DEMO in UMA Campus, Málaga.
+- Now, simulation is played in loop.
+- Added support for real OBDII interface and GPS receiver.
+
 ### Version 3.5
 - Deleted force request client certificate argument.
 - Deleted client log dump argument.

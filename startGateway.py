@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Sep 13, 2019.           #
+# Created by Manuel Montenegro, Sep 20, 2019.           #
 #########################################################
 
 
@@ -24,13 +24,15 @@ from modules import in_Ble4Scanner
 from modules import in_Ble5Scanner
 from modules import in_InteractiveScanner
 from modules import in_ObdGpsBeaconsTrip
+from modules import in_ObdGpsInterface
 
 
 # ==== Global variables ====
 
 # Version of this script
-scriptVersion = 3.5
-
+scriptVersion = 3.6
+# OBD II and GPS interfaces for real data
+realObdGps = False
 # OBD II and GPS data can be loaded from DB
 obdGpsTrip = False
 # Bluetooth beacons can be loaded from session DB
@@ -86,6 +88,7 @@ def main():
     bleInteractiveThread = None
     receiveFromSocketThread = None
     obdGpsBeaconsTripThread = None
+    obdGpsInterfaceThread = None
 
     # threading event used for closing safely the threads when interrupt signal is received
     threadStopEvent = threading.Event()
@@ -103,6 +106,10 @@ def main():
 
     # create SSL socket for communication with AVATAR
     sock = createSslSocket ()
+    #user = "74943620Y"
+    if realObdGps:
+        obdGpsInterface = in_ObdGpsInterface.ObdGpsInterface (threadStopEvent, dataQueue)
+        obdGpsInterfaceThread = obdGpsInterface.run()
 
     if obdGpsTrip:
         obdGpsBeaconsTrip = in_ObdGpsBeaconsTrip.ObdGpsBeaconsTrip (threadStopEvent, dataQueue, beaconThreshold, beaconsTrip, obdGpsBeaconsDb)
@@ -137,6 +144,8 @@ def main():
     receiveFromSocketThread.start()
 
     try:
+        if obdGpsInterfaceThread != None:
+            obdGpsInterfaceThread.join()
         if obdGpsBeaconsTripThread != None:
             obdGpsBeaconsTripThread.join()
         if ble4Thread != None:
@@ -330,6 +339,7 @@ def setUpArgParser ( ):
     global caCertPath
     global gatewayIP
     global obdGpsTrip
+    global realObdGps
     global beaconsTrip
     global obdGpsBeaconsDb
     global interactiveBeacons
@@ -344,7 +354,7 @@ def setUpArgParser ( ):
     argParser = argparse.ArgumentParser(description = scriptDescription)
 
     # command line arguments
-    argParser.add_argument("-l", "--loadCarTrip", help="Loads a specific session database. This will simulate only OBDII and GPS data. You can use default saved session trip database or indicate the name of another one placed in sessions folder: '--load' or '--load Session.db'", nargs='?', type=str, const='no_path')
+    argParser.add_argument("-l", "--loadCarTrip", help="Loads a specific session database. This will simulate only OBDII and GPS data. You can use default saved session trip database or indicate the name of another one placed in sessions folder: '--loadCarTrip' or '--loadCarTrip Session.db'", nargs='?', type=str, const='no_path')
     argParser.add_argument("-L", "--loadBeaconsTrip", help="This arguments must be indicated together with '--loadCarTrip'. This activates the simulated beacons from session database.", action='store_true')
     argParser.add_argument("-c", "--cert", help="Loads a specific gateway certificate. By default, the script loads certificate for normal vehicle. The certificate file must be on cetificates folder.")
     argParser.add_argument("-C", "--ca", help="Loads a specific certificate of CA. By default, the script loads AVATAR CA. The certificate file must be on certificates folder.")
@@ -375,7 +385,7 @@ def setUpArgParser ( ):
         gatewayIP = args.address
 
     if args.real_obd_gps:
-        pass
+        realObdGps = True
 
     if args.real_ble4:
         ble4Beacons = True
