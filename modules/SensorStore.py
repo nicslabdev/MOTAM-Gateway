@@ -112,9 +112,13 @@ class SensorStore:
             beaconDataParsed["lon"] = struct.unpack('!f',bytes.fromhex(beaconData[10:18]))[0]
             beaconDataParsed["id"] = beaconData[0:18]
             beaconDataParsed["specificData"] = {}
-            beaconDataParsed["specificData"]["trafficSign"] = int(beaconData[26:28],16)
-            if len(beaconData) > 28:
+            
+            if len(beaconData) > 28:  # if intelligent traffic light
+                beaconDataParsed["specificData"]["trafficSign"] = -1
+                beaconDataParsed["specificData"]["state"] = int(beaconData[26:28],16)
                 beaconDataParsed["specificData"]["timeRemaining"] = int(beaconData[28:30], 16)
+            else: 
+                beaconDataParsed["specificData"]["trafficSign"] = int(beaconData[26:28],16)
         
         elif beaconType == self.beaconTypeIdentifiers["roadStateBeaconId"]:
             beaconDataParsed["presence"] = presence
