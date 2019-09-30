@@ -61,6 +61,7 @@ class Ble5Scanner:
                 beaconData2 = beaconData [18:]
                 try:
                     beaconDict = self.sensorStore.add(beaconData2)
+                    print(beaconDict)
                     self.beaconsQueue.put(beaconDict)
                 except ValueError as err:
                         pass
