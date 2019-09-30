@@ -4,7 +4,7 @@
 # Python3 Script that simulates OBDII, GPS and beacons  #
 # received data from car on a supposed trip.            #
 # MOTAM project: https://www.nics.uma.es/projects/motam #
-# Created by Manuel Montenegro, Sep 20, 2019.           #
+# Created by Manuel Montenegro, Sep 25, 2019.           #
 #########################################################
 
 
@@ -30,7 +30,7 @@ from modules import in_ObdGpsInterface
 # ==== Global variables ====
 
 # Version of this script
-scriptVersion = 3.6
+scriptVersion = 3.7
 # OBD II and GPS interfaces for real data
 realObdGps = False
 # OBD II and GPS data can be loaded from DB
@@ -262,15 +262,30 @@ def receiveFromSocket (threadStopEvent, sock):
         
         # Activate emergency mode
         elif idMessage == 1:
-            print ("Enabling emergency mode!")
+            dataRead = sock.recv(1024)
+            messageLength = int(dataRead.decode("utf-8"))
+            dataRead = sock.recv(1024)
+            activated = int(dataRead.decode("utf-8"))
+            print ("\r\nEnabled emergency mode:", activated)
 
         # Activate slow vehicle mode
         elif idMessage == 2:
             print ("Enabling slow vehicle mode")
+            # dataRead = sock.recv(1024)
+            # messageLength = int(dataRead.decode("utf-8"))
+            # dataRead = sock.recv(1024)
+            # coordinates = dataRead.decode("utf-8")
+
 
         # Activate crashed vehicle mode
         elif idMessage == 3:
-            print ("Enabling crashed vehicle mode")
+            print ("\r\nEnabling crashed vehicle mode")
+            dataRead = sock.recv(1024)
+            messageLength = int(dataRead.decode("utf-8"))
+            dataRead = sock.recv(1024)
+            coordinates = dataRead.decode("utf-8")
+
+
 
 # Make folder for saved camera shots of driver and profile photo from AVATAR
 def takePictureMakeDir ():
