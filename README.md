@@ -122,6 +122,13 @@ The firmware of nRF52840 dongle Beacon Scanner can be found on its GitHub reposi
 > [**MOTAM Scanner repository on GitHub.**](https://github.com/nicslabdev/MOTAM-Scanner)
 
 ## Changelog
+### Version 3.7
+- Fixed BLE4 bluepy error: HCI0 interface go down when it is scanning for too much time.
+- Bug fixed when parsing time remaining data from intelligent traffic light.
+- Added two new examples of Info Panel on interactive mode.
+- Added support and parsed data from AVATAR for emergency vehicle, slow vehicle and crashed vehicle modes.
+- Added new simulation database.
+
 ### Version 3.6
 - Fixed bug: simulation database doesn't work
 - Added new simulation DB for DEMO in UMA Campus, Málaga.
