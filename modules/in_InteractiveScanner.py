@@ -41,7 +41,9 @@ class InteractiveScanner:
             19: ("Vehículo de emergencia en parte izq de calzada", "05011102220333044400"),
             20: ("Vehículo de emergencia en parte cent de calzada", "05011102220333044401"),
             21: ("Vehículo de emergencia en parte der de calzada", "05011102220333044402"),
-            22: ("Vehículo accidentado", "07111122223333444469")
+            22: ("Vehículo accidentado", "07111122223333444469"),
+            23: ("infoPanel Cruce escolar", "094212dd41c08fee72010e005a4372756365206573636f6c6172"),
+            24: ("infoPanel Zona en obras", "094212dd41c08fee72010e005a5a6f6e6120656e206f62726173")
         }
 
         # Check if new coordinates has been given
